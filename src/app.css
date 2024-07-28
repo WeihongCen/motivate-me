@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --color-productive: #80b680;
+  --color-unproductive: #a86861;
+  --color-idle: #c1c1c1;
+}

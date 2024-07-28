@@ -1,14 +1,19 @@
 <script>
     import { onMount } from "svelte";
     import Chart from "chart.js/auto";
+    import {
+        COLOR_PRODUCTIVE,
+        COLOR_UNPRODUCTIVE,
+        COLOR_IDLE
+    } from "$lib/constants.js"
     
     export let statistics;
     let piechartCanvas;
 
     const transparentColors = [
-        '#6df395aa',
-        '#f3726caa',
-        '#ffffffaa'
+        COLOR_PRODUCTIVE,
+        COLOR_UNPRODUCTIVE,
+        COLOR_IDLE
     ];
     const solidColors = [
         '#6df395',
@@ -34,14 +39,13 @@
                     hoverBorderColor: solidColors,
                     borderAlign: 'center',
                     borderJoinStyle: 'round',
-                    hoverOffset: 50,
-                    hoverBorderWidth: 10,
+                    hoverOffset: 30,
                 }]
             },
             options: {
-                borderWidth: 4,
+                borderWidth: 0,
                 layout: {
-                    padding: 50
+                    padding: 20
                 },
                 plugins: {
                     tooltip: {
@@ -50,12 +54,10 @@
                     legend: {
                         display: false
                     }
-                }
+                },
             },
         });
     });
 </script>
 
-<div class="w-[400px]">
-    <canvas bind:this={piechartCanvas} />
-</div>
+<canvas class="max-h-full" bind:this={piechartCanvas} />

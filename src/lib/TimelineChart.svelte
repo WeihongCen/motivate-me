@@ -1,6 +1,12 @@
 <script>
     import { onMount } from "svelte";
     import Chart from "chart.js/auto";
+    import 'chartjs-adapter-luxon';
+    import {
+        COLOR_PRODUCTIVE,
+        COLOR_UNPRODUCTIVE,
+        COLOR_IDLE
+    } from "$lib/constants.js"
 
     let timelineChart;
 
@@ -19,42 +25,39 @@
         new Chart(timelineChart,{
             type: 'bar',
             data: {
-                labels: ['2020'],
                 datasets: [
                     {
-                        label: '2020',
-                        data: [10],
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1,
+                        label: "productive",
+                        data: [
+                            {
+                                x: [new Date('2022-12-24T00:30'), new Date('2022-12-24T01:00')],
+                                y: 'Status',
+                            },
+                        ],
+                        backgroundColor: COLOR_PRODUCTIVE,
+                        hoverBackgroundColor: COLOR_PRODUCTIVE,
                     },
                     {
-                        label: '2021',
-                        data: [15],
-                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        borderWidth: 1,
+                        label: "unproductive",
+                        data: [
+                            {
+                                x: [new Date('2022-12-24T00:20'), new Date('2022-12-24T00:30')],
+                                y: 'Status'
+                            },
+                        ],
+                        backgroundColor: COLOR_UNPRODUCTIVE,
+                        hoverBackgroundColor: COLOR_UNPRODUCTIVE,
                     },
                     {
-                        label: '2022',
-                        data: [25],
-                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        borderWidth: 1,
-                    },
-                    {
-                        label: '2023',
-                        data: [30],
-                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                        borderColor: 'rgba(255, 206, 86, 1)',
-                        borderWidth: 1,
-                    },
-                    {
-                        label: '2024',
-                        data: [20],
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1,
+                        label: "idle",
+                        data: [
+                            {
+                                x: [new Date('2022-12-24T00:00'), new Date('2022-12-24T00:20')],
+                                y: 'Status'
+                            },
+                        ],
+                        backgroundColor: COLOR_IDLE,
+                        hoverBackgroundColor: COLOR_IDLE,
                     },
                 ],
             },
@@ -62,13 +65,36 @@
                 indexAxis: 'y',
                 scales: {
                     x: {
-                        beginAtZero: true,
-                        stacked: true
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                        },
+                        ticks: {
+                            stepSize: 10,
+                            color: '#888888'
+                        },
+                        border: {
+                            display: false
+                        },
+                        grid: {
+                            tickColor: '#888888',
+                            tickWidth: 2,
+                            lineWidth: 0,
+                        },
+                        min: new Date('2022-12-24T00:00'),
+                        max: new Date('2022-12-24T01:00'),
                     },
                     y: {
+                        beginAtZero: true,
                         stacked: true,
                         ticks: {
-                            display: false,
+                            display: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        grid: {
+                            display: false
                         }
                     },
                 },
@@ -86,6 +112,4 @@
     });
 </script>
 
-<div class="w-96 h-20">
-    <canvas bind:this={timelineChart} />
-</div>
+<canvas bind:this={timelineChart} />

@@ -23,6 +23,16 @@
         color: #bbbbbb;
     }
     :global(button) {
-        color: #bbbbbb;
+        color: white;
     }
+
+    /* :global(::-webkit-scrollbar) {
+        width: 0.5rem
+    }
+    :global(::-webkit-scrollbar-track) {
+        background: #444444;
+    }
+    :global(::-webkit-scrollbar-thumb) {
+        background: #888888
+    } */
 </style>

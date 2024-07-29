@@ -2,26 +2,11 @@
     import { onMount } from "svelte";
     import Chart from "chart.js/auto";
     import 'chartjs-adapter-luxon';
-    import {
-        COLOR_PRODUCTIVE,
-        COLOR_UNPRODUCTIVE,
-        COLOR_IDLE
-    } from "$lib/constants.js"
 
     let timelineChart;
-
-    const transparentColors = [
-        '#6df395aa',
-        '#f3726caa',
-        '#ffffffaa'
-    ];
-    const solidColors = [
-        '#6df395',
-        '#f3726c',
-        '#ffffff'
-    ];
-
+    
     onMount(() => {
+        const rootStyles = getComputedStyle(document.documentElement);
         new Chart(timelineChart,{
             type: 'bar',
             data: {
@@ -33,9 +18,13 @@
                                 x: [new Date('2022-12-24T00:30'), new Date('2022-12-24T01:00')],
                                 y: 'Status',
                             },
+                            {
+                                x: [new Date('2022-12-24T00:05'), new Date('2022-12-24T00:15')],
+                                y: 'Status',
+                            },
                         ],
-                        backgroundColor: COLOR_PRODUCTIVE,
-                        hoverBackgroundColor: COLOR_PRODUCTIVE,
+                        backgroundColor: rootStyles.getPropertyValue('--color-productive'),
+                        hoverBackgroundColor: rootStyles.getPropertyValue('--color-productive'),
                     },
                     {
                         label: "unproductive",
@@ -45,19 +34,19 @@
                                 y: 'Status'
                             },
                         ],
-                        backgroundColor: COLOR_UNPRODUCTIVE,
-                        hoverBackgroundColor: COLOR_UNPRODUCTIVE,
+                        backgroundColor: rootStyles.getPropertyValue('--color-unproductive'),
+                        hoverBackgroundColor: rootStyles.getPropertyValue('--color-unproductive'),
                     },
                     {
                         label: "idle",
                         data: [
                             {
-                                x: [new Date('2022-12-24T00:00'), new Date('2022-12-24T00:20')],
+                                x: [new Date('2022-12-24T00:15'), new Date('2022-12-24T00:20')],
                                 y: 'Status'
                             },
                         ],
-                        backgroundColor: COLOR_IDLE,
-                        hoverBackgroundColor: COLOR_IDLE,
+                        backgroundColor: rootStyles.getPropertyValue('--color-idle'),
+                        hoverBackgroundColor: rootStyles.getPropertyValue('--color-idle'),
                     },
                 ],
             },
@@ -112,4 +101,4 @@
     });
 </script>
 
-<canvas bind:this={timelineChart} />
+<canvas class="max-h-full" bind:this={timelineChart} />

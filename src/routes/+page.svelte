@@ -1,10 +1,11 @@
 <script>
-    // import Highlight from "@highlight-ai/app-runtime";
+    import Highlight from "@highlight-ai/app-runtime";
+    import { createAuth0Client } from '@auth0/auth0-spa-js';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     
 	onMount(async () => {
-        goto('/dashboard');
+        // goto('/dashboard');
 	});
 </script>
 

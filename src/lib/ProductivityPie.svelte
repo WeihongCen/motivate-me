@@ -1,20 +1,10 @@
 <script>
     import { onMount } from "svelte";
     import Chart from "chart.js/auto";
-    import {
-        COLOR_PRODUCTIVE,
-        COLOR_UNPRODUCTIVE,
-        COLOR_IDLE
-    } from "$lib/constants.js"
     
     export let statistics;
     let piechartCanvas;
 
-    const transparentColors = [
-        COLOR_PRODUCTIVE,
-        COLOR_UNPRODUCTIVE,
-        COLOR_IDLE
-    ];
     const solidColors = [
         '#6df395',
         '#f3726c',
@@ -22,6 +12,12 @@
     ];
   
     onMount(() => {
+        const rootStyles = getComputedStyle(document.documentElement);
+        const transparentColors = [
+            rootStyles.getPropertyValue('--color-productive'),
+            rootStyles.getPropertyValue('--color-unproductive'),
+            rootStyles.getPropertyValue('--color-idle')
+        ];
         new Chart(piechartCanvas.getContext("2d"), {
             type: "doughnut",
             data: {

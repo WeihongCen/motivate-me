@@ -1,6 +1,5 @@
 <script>
 
-    let recording = false;
 </script>
 
 <div class="flex w-full h-screen">
@@ -11,6 +10,11 @@
                 src="favicon.png" alt="icon">
                 <!-- <p>Dashboard</p> -->
             </button>
+            <form method="POST" action="?/signOut">
+                <button class="flex items-center p-2 gap-2 rounded-xl hover:bg-[#444444] transition-all duration-300">
+                    sign out
+                </button>
+            </form>
         </div>
     </div>
     

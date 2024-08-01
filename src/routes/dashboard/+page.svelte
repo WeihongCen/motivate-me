@@ -4,19 +4,56 @@
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
 
-    const snapshotDelay = 1000;
+    const ANALYSIS_DELAY = 300000; // 5 minutes
+    const SNAPSHOT_DELAY = 5000;
+    const RESCALE_WIDTH = 960;
+    const RESCALE_HEIGHT = 540;
+
     let username;
     let recording = false;
-    let screenshot;
+    let canvas; // Used to rescale image in imageToDataURL
+    let ctx;
+    let snapshots = [];
     let timestamp;
+    let analysisInterval;
     let snapshotInterval;
 
     export let data;
 
+    function rescaleImage(imageURL, callback) {
+        const imageObject = new Image();
+        imageObject.onload = function() {
+            canvas.width = RESCALE_WIDTH;
+            canvas.height = RESCALE_HEIGHT;
+            ctx.clearRect(0, 0, RESCALE_WIDTH, RESCALE_HEIGHT);
+            ctx.drawImage(imageObject, 0, 0, RESCALE_WIDTH, RESCALE_HEIGHT);
+            const resizedBase64URL = canvas.toDataURL();
+            callback(resizedBase64URL);
+        };
+        imageObject.src = imageURL;
+    }
+
     async function takeSnapshot() {
         const displayScreenshots = await Highlight.user.getDisplayScreenshots();
-        screenshot = displayScreenshots[0].thumbnail;
+        const context = await Highlight.user.getContext();
+        const screenshot = displayScreenshots[0].thumbnail;
         timestamp = Date.now();
+        console.log(`taken snapshot (${timestamp})`);
+        rescaleImage(screenshot, async (resizedBase64URL) => {
+            console.log(context.application.focusedWindow.title);
+            snapshots.push({
+                focusedWindowTitle: context.application.focusedWindow.title,
+                base64URL: resizedBase64URL,
+            });
+        });
+    }
+
+    async function analyzeSnapshots() {
+        let res = await fetch(`/api/describe`, {
+            method: "POST",
+            body: JSON.stringify({ snapshots: snapshots }),
+        });
+        snapshots = [];
     }
 
     async function startRecording() {
@@ -25,7 +62,8 @@
                 let screenshotPermission = await Highlight.permissions.requestScreenshotPermission();
                 if (screenshotPermission) {
                     recording = true;
-                    snapshotInterval = setInterval(takeSnapshot, snapshotDelay);
+                    snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
+                    analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
                 }
             } catch (error) {
                 console.log(error.message)
@@ -37,11 +75,15 @@
 
     function stopRecording() {
         recording = false;
+        clearInterval(analysisInterval);
         clearInterval(snapshotInterval);
     }
 
     onMount(() => {
-        
+        canvas = document.createElement('canvas');
+        ctx = canvas.getContext('2d');
+        return () => {
+        };
     });
 </script>
 
@@ -51,26 +93,18 @@
         <p>{data.user.email}</p>
     </div>
     <div class="col-span-2 col-start-3 p-5 bg-[#444444] rounded-3xl">
-        {#if screenshot}
-            <img class="h-full"
-            src={screenshot} alt="last screenshot">
+        {#if snapshots}
+            <img class="max-h-full"
+            src={snapshots[snapshots.length-1]} alt="last screenshot">
         {/if}
     </div>
     <div class="flex flex-col gap-2 col-span-1 col-start-5 p-5 bg-[#444444] rounded-3xl">
         {#if !recording}
-            <div class="flex justify-end items-center w-full gap-2">
-                <p>recording</p>
-                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-            </div>
             <button class="bg-[#ff9457] px-4 py-2 hover:opacity-80 transition-all duration-300"
             on:click={ startRecording }>
                 Record
             </button>
         {:else}
-            <div class="flex justify-end items-center w-full gap-2">
-                <p>not recording</p>
-                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-            </div>
             <button class="bg-red-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
             on:click={ stopRecording }>
                 Stop
@@ -89,20 +123,6 @@
             <TimelineChart />
         </div>
         <p class="relative h-full overflow-auto">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc 
-            commodo mi sit amet risus bibendum lobortis. Vestibulum ornare, 
-            elit eget finibus efficitur, augue mi gravida turpis, at rutrum 
-            ligula justo eu velit. Donec tincidunt dolor quis lacus imperdiet 
-            accumsan. Aliquam vel consectetur elit. Sed ac tempus enim. 
-            Pellentesque at eros eget velit tempus sagittis. Cras quis velit 
-            eget nulla ullamcorper pharetra sed sit amet sapien.
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc 
-            commodo mi sit amet risus bibendum lobortis. Vestibulum ornare, 
-            elit eget finibus efficitur, augue mi gravida turpis, at rutrum 
-            ligula justo eu velit. Donec tincidunt dolor quis lacus imperdiet 
-            accumsan. Aliquam vel consectetur elit. Sed ac tempus enim. 
-            Pellentesque at eros eget velit tempus sagittis. Cras quis velit 
-            eget nulla ullamcorper pharetra sed sit amet sapien.
         </p>
     </div>
 </div>

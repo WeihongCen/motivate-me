@@ -11,6 +11,8 @@
     let timestamp;
     let snapshotInterval;
 
+    export let data;
+
     async function takeSnapshot() {
         const displayScreenshots = await Highlight.user.getDisplayScreenshots();
         screenshot = displayScreenshots[0].thumbnail;
@@ -46,6 +48,7 @@
 <div class="w-full grid grid-cols-5 grid-rows-3 gap-5 p-5">
     <div class="col-span-2 p-5 bg-[#444444] rounded-3xl">
         <h2>Profile</h2>
+        <p>{data.user.email}</p>
     </div>
     <div class="col-span-2 col-start-3 p-5 bg-[#444444] rounded-3xl">
         {#if screenshot}

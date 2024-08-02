@@ -15,13 +15,48 @@ function getBase64Data(base64Url) {
     return { mimeType, imageData };
 }
 
+function findMostFrequentWindowSnapshot(data) {
+    const windowTitleCount = {};
+    const latestURL = {};
+
+    // Iterate through the data to count frequencies and store the latest URL
+    data.forEach(item => {
+        const { focusedWindowTitle, base64URL } = item;
+
+        // Update the count for each title
+        if (windowTitleCount[focusedWindowTitle]) {
+            windowTitleCount[focusedWindowTitle]++;
+        } else {
+            windowTitleCount[focusedWindowTitle] = 1;
+        }
+
+        // Update the latest URL for the current title
+        latestURL[focusedWindowTitle] = base64URL;
+    });
+    let mostFrequentTitle = null;
+    let maxCount = 0;
+    for (const title in windowTitleCount) {
+        if (windowTitleCount[title] > maxCount) {
+            maxCount = windowTitleCount[title];
+            mostFrequentTitle = title;
+        }
+    }
+
+    // Get the latest URL for the most frequent title
+    const resultURL = latestURL[mostFrequentTitle];
+
+    return { mostFrequentTitle, resultURL };
+}
+
 export const POST = async ({ request }) => {
     try {
         const { snapshots } = await request.json();
-        const { mimeType, imageData } = getBase64Data(base64URL);
+        const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots)
+
+        const { mimeType, imageData } = getBase64Data(resultURL);
         const res = await anthropic.messages.create({
             model: "claude-3-haiku-20240307",
-            max_tokens: 100,
+            max_tokens: 50,
             temperature: 0,
             system: "You will be analyzing a desktop screenshot to describe what the user is doing in under 20 words.",
             messages: [

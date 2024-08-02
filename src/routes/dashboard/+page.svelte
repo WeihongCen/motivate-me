@@ -4,12 +4,11 @@
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
 
-    const ANALYSIS_DELAY = 300000; // 5 minutes
-    const SNAPSHOT_DELAY = 5000;
+    const ANALYSIS_DELAY = 20000; // 5 minutes per analysis
+    const SNAPSHOT_DELAY = 1000; // 10 seconds per snapshot
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
 
-    let username;
     let recording = false;
     let canvas; // Used to rescale image in imageToDataURL
     let ctx;
@@ -34,25 +33,28 @@
     }
 
     async function takeSnapshot() {
-        const displayScreenshots = await Highlight.user.getDisplayScreenshots();
         const context = await Highlight.user.getContext();
-        const screenshot = displayScreenshots[0].thumbnail;
+        const focusedWindowTitle = context.application.focusedWindow.title;
+        const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
+        const startTime = timestamp
         timestamp = Date.now();
-        console.log(`taken snapshot (${timestamp})`);
-        rescaleImage(screenshot, async (resizedBase64URL) => {
-            console.log(context.application.focusedWindow.title);
+
+        rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
+            console.log("added screenshot");
             snapshots.push({
-                focusedWindowTitle: context.application.focusedWindow.title,
+                focusedWindowTitle: focusedWindowTitle,
                 base64URL: resizedBase64URL,
             });
+            snapshots = snapshots;
         });
     }
 
     async function analyzeSnapshots() {
-        let res = await fetch(`/api/describe`, {
+        const res = await fetch(`/api/describe`, {
             method: "POST",
             body: JSON.stringify({ snapshots: snapshots }),
         });
+        const analysis = await res.json();
         snapshots = [];
     }
 
@@ -62,6 +64,7 @@
                 let screenshotPermission = await Highlight.permissions.requestScreenshotPermission();
                 if (screenshotPermission) {
                     recording = true;
+                    timestamp = Date.now(); // Initialize start timestamp
                     snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
                     analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
                 }
@@ -93,9 +96,9 @@
         <p>{data.user.email}</p>
     </div>
     <div class="col-span-2 col-start-3 p-5 bg-[#444444] rounded-3xl">
-        {#if snapshots}
+        {#if snapshots.length > 0}
             <img class="max-h-full"
-            src={snapshots[snapshots.length-1]} alt="last screenshot">
+            src={snapshots[snapshots.length-1].base64URL} alt="last screenshot">
         {/if}
     </div>
     <div class="flex flex-col gap-2 col-span-1 col-start-5 p-5 bg-[#444444] rounded-3xl">

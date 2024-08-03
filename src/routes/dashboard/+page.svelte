@@ -3,11 +3,19 @@
     import ProductivityPie from "$lib/ProductivityPie.svelte";
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
+    import { email, username, occupation, task } from '$lib/stores.js';
+    
+    export let data;
 
     const ANALYSIS_DELAY = 20000; // 5 minutes per analysis
     const SNAPSHOT_DELAY = 1000; // 10 seconds per snapshot
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
+
+    let emailValue;
+    let usernameValue;
+    let occupationValue;
+    let taskValue;
 
     let recording = false;
     let canvas; // Used to rescale image in imageToDataURL
@@ -16,8 +24,6 @@
     let timestamp;
     let analysisInterval;
     let snapshotInterval;
-
-    export let data;
 
     function rescaleImage(imageURL, callback) {
         const imageObject = new Image();
@@ -36,7 +42,7 @@
         const context = await Highlight.user.getContext();
         const focusedWindowTitle = context.application.focusedWindow.title;
         const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
-        const startTime = timestamp
+        const startTime = timestamp;
         timestamp = Date.now();
 
         rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
@@ -82,26 +88,37 @@
         clearInterval(snapshotInterval);
     }
 
-    onMount(() => {
+    onMount(async () => {
+        email.set(data.user.email);
         canvas = document.createElement('canvas');
         ctx = canvas.getContext('2d');
+        email.subscribe((value) => { emailValue = value });
+        username.subscribe((value) => { usernameValue = value });
+        occupation.subscribe((value) => { occupationValue = value });
+        task.subscribe((value) => { taskValue = value });
+
+        await Highlight.appStorage.whenHydrated();
+
         return () => {
         };
     });
 </script>
 
 <div class="w-full grid grid-cols-5 grid-rows-3 gap-5 p-5">
-    <div class="col-span-2 p-5 bg-[#444444] rounded-3xl">
+    <div class="col-span-2 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
         <h2>Profile</h2>
-        <p>{data.user.email}</p>
+        <p>{emailValue}</p>
+        <p>{usernameValue}</p>
+        <p>{occupationValue}</p>
+        <p>{taskValue}</p>
     </div>
-    <div class="col-span-2 col-start-3 p-5 bg-[#444444] rounded-3xl">
+    <div class="col-span-2 col-start-3 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
         {#if snapshots.length > 0}
             <img class="max-h-full"
             src={snapshots[snapshots.length-1].base64URL} alt="last screenshot">
         {/if}
     </div>
-    <div class="flex flex-col gap-2 col-span-1 col-start-5 p-5 bg-[#444444] rounded-3xl">
+    <div class="flex flex-col gap-2 col-span-1 col-start-5 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
         {#if !recording}
             <button class="bg-[#ff9457] px-4 py-2 hover:opacity-80 transition-all duration-300"
             on:click={ startRecording }>
@@ -114,13 +131,13 @@
             </button>
         {/if}
     </div>
-    <div class="flex flex-col col-span-2 row-start-2 row-span-2 p-5 bg-[#444444] rounded-3xl">
+    <div class="flex flex-col col-span-2 row-start-2 row-span-2 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
         <h2>You are <span class={`text-[var(--color-productive)]`}>productive</span></h2>
         <div class="flex justify-center items-center w-full h-full">
             <ProductivityPie statistics={[300, 50, 20]} />
         </div>
     </div>
-    <div class="flex flex-col gap-5 col-span-3 row-start-2 row-span-2 col-start-3 p-5 bg-[#444444] rounded-3xl">
+    <div class="flex flex-col gap-5 col-span-3 row-start-2 row-span-2 col-start-3 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
         <h2>Past hour activity</h2>
         <div class="flex flex-col w-full h-1/5 gap-5">
             <TimelineChart />

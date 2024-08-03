@@ -23,11 +23,15 @@
 	<title>Motivate Me</title>
 </svelte:head>
 
+<div class="absolute inset-0 overflow-clip z-[-1]">
+    <img src="/gradient-blob.png" class="w-full" alt="" />
+</div>
+
 <slot />
 
 <style lang="postcss">
     :global(html) {
-        background-color: #222222;
+        background-color: black;
     }
     :global(h1) {
         color: #bbbbbb;

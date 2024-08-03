@@ -5,7 +5,7 @@
     import { onMount } from "svelte";
 
     const ANALYSIS_DELAY = 20000; // 5 minutes per analysis
-    const SNAPSHOT_DELAY = 1000; // 10 seconds per snapshot
+    const SNAPSHOT_DELAY = 5000; // 10 seconds per snapshot
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
 
@@ -36,7 +36,6 @@
         const context = await Highlight.user.getContext();
         const focusedWindowTitle = context.application.focusedWindow.title;
         const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
-        const startTime = timestamp
         timestamp = Date.now();
 
         rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {

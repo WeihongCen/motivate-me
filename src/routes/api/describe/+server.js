@@ -56,9 +56,12 @@ export const POST = async ({ request }) => {
         const { mimeType, imageData } = getBase64Data(resultURL);
         const res = await anthropic.messages.create({
             model: "claude-3-haiku-20240307",
-            max_tokens: 50,
+            max_tokens: 100,
             temperature: 0,
-            system: "You will be analyzing a desktop screenshot to describe what the user is doing in under 20 words.",
+            system: `
+            Describe what the user is doing using a screenshot and the name of the window.
+            Keep your answer concise.
+            `,
             messages: [
                 {
                     "role": "user",
@@ -70,6 +73,10 @@ export const POST = async ({ request }) => {
                                 "media_type": mimeType,
                                 "data": imageData
                             }
+                        },
+                        {
+                            "type": "text",
+                            "text": mostFrequentTitle
                         }
                     ]
                 }

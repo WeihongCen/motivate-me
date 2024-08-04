@@ -1,5 +1,17 @@
 <script>
+    import { onMount } from 'svelte';
 
+    export let data;
+    const { user } = data;
+
+    onMount(() => {
+        email.subscribe((value) => { emailValue = value });
+        username.subscribe((value) => { usernameValue = value });
+        occupation.subscribe((value) => { occupationValue = value });
+        task.subscribe((value) => { taskValue = value });
+        if (Highlight.isRunningInHighlight()) {
+        }
+    });
 </script>
 
 <div class="flex w-full h-screen">

@@ -1,26 +1,26 @@
 <script>
     import "../app.css";
     import { invalidate } from '$app/navigation'
-	import { onMount } from 'svelte'
+    import { onMount } from 'svelte'
 
-	export let data
+    export let data
     
-	let { supabase, session } = data
-	$: ({ supabase, session } = data)
+    let { supabase, session } = data
+    $: ({ supabase, session } = data)
     
-	onMount(() => {
-		const { data } = supabase.auth.onAuthStateChange((event, newSession) => {
-			if (newSession?.expires_at !== session?.expires_at) {
-				invalidate('supabase:auth')
-			}
-		})
+    onMount(() => {
+        const { data } = supabase.auth.onAuthStateChange((event, newSession) => {
+            if (newSession?.expires_at !== session?.expires_at) {
+                invalidate('supabase:auth')
+            }
+        })
 
-		return () => data.subscription.unsubscribe()
-	})
+        return () => data.subscription.unsubscribe()
+    })
 </script>
 
 <svelte:head>
-	<title>Motivate Me</title>
+    <title>Motivate Me</title>
 </svelte:head>
 
 <div class="absolute inset-0 overflow-clip z-[-1]">

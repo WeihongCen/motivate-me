@@ -6,9 +6,10 @@
     import { email, username, occupation, task } from '$lib/stores.js';
     
     export let data;
+    const { user } = data;
 
-    const ANALYSIS_DELAY = 20000; // 5 minutes per analysis
-    const SNAPSHOT_DELAY = 5000; // 10 seconds per snapshot
+    const ANALYSIS_DELAY = 300000; // 5 minutes per analysis
+    const SNAPSHOT_DELAY = 10000; // 10 seconds per snapshot
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
 
@@ -42,7 +43,7 @@
         const context = await Highlight.user.getContext();
         const focusedWindowTitle = context.application.focusedWindow.title;
         const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
-        const startTime = timestamp
+        const startTime = timestamp;
         timestamp = Date.now();
 
         rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
@@ -89,7 +90,7 @@
     }
 
     onMount(async () => {
-        email.set(data.user.email);
+        email.set(user.email);
         canvas = document.createElement('canvas');
         ctx = canvas.getContext('2d');
         email.subscribe((value) => { emailValue = value });

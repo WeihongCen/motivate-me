@@ -21,7 +21,13 @@ function findMostFrequentWindowSnapshot(data) {
 
     // Iterate through the data to count frequencies and store the latest URL
     data.forEach(item => {
-        const { focusedWindowTitle, base64URL } = item;
+        const { 
+            focusedWindowTitle,
+            focusedWindowIcon,
+            base64URL,
+            startTime,
+            endTime,
+        } = item;
 
         // Update the count for each title
         if (windowTitleCount[focusedWindowTitle]) {
@@ -50,22 +56,31 @@ function findMostFrequentWindowSnapshot(data) {
 
 export const POST = async ({ request }) => {
     try {
-        const { snapshots } = await request.json();
-        const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots)
-
+        const { snapshots, occupation } = await request.json();
+        const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots);
         const { mimeType, imageData } = getBase64Data(resultURL);
-        const res = await anthropic.messages.create({
-            model: "claude-3-haiku-20240307",
-            max_tokens: 100,
-            temperature: 0,
-            system: `
+
+        let prompt = `
             Describe what the user is doing using a screenshot and the name of the window.
             Keep your answer concise.
-            `,
+            In addition, determine if the user is productive or not based on their occupation.
+
+            User occupation: ${occupation}
+
+            Return in JSON format: { "productive": "true", "description": "short description" }
+            `
+        const res = await anthropic.messages.create({
+            model: "claude-3-haiku-20240307",
+            max_tokens: 200,
+            temperature: 0,
             messages: [
                 {
                     "role": "user",
                     "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
                         {
                             "type": "image",
                             "source": {
@@ -83,7 +98,7 @@ export const POST = async ({ request }) => {
             ]
         });
         console.log(res);
-        return json(res.content[0].text);
+        return json(JSON.parse(res.content[0].text));
         
     } catch (error) {
         console.log(error.message);

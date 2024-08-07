@@ -1,55 +1,53 @@
 <script>
     import Highlight from "@highlight-ai/app-runtime";
     import { onMount } from 'svelte';
-    import { email, username, occupation, task } from '$lib/stores.js';
 
-    let emailValue = '';
-    let usernameValue = '';
-    let occupationValue = '';
-    let taskValue = '';
+    export let data;
+    const { user } = data;
 
-    function handleSubmit(event) {
+    let id;
+    let email = user.email;
+    let username;
+    let occupation;
+
+    async function handleSubmit(event) {
         event.preventDefault();
-        if (Highlight.isRunningInHighlight()) {
-            Highlight.appStorage.set("user/email", emailValue);
-            Highlight.appStorage.set("user/username", usernameValue);
-            Highlight.appStorage.set("user/occupation", occupationValue);
-            Highlight.appStorage.set("user/task", taskValue);
-            email.set(emailValue);
-            username.set(usernameValue);
-            occupation.set(occupationValue);
-            task.set(taskValue);
+        try {
+            await fetch(`/api/updateProfile`, {
+                method: "POST",
+                body: JSON.stringify({
+                    id: id,
+                    username: username,
+                    occupation: occupation,
+                }),
+            });
+        } catch (error) {
+            console.log(error.message);
         }
-        
     }
 
-    // Assuming Highlight.appStorage is already initialized
+    async function populateUserData() {
+        let response = await fetch(`/api/getProfile`, {
+            method: "GET"
+        })
+            .then(res => res.json());
+        id = response.userData.id;
+        username = response.userData.username;
+        occupation = response.userData.occupation;
+    }
+
     onMount(() => {
-        email.subscribe((value) => { emailValue = value });
-        username.subscribe((value) => { usernameValue = value });
-        occupation.subscribe((value) => { occupationValue = value });
-        task.subscribe((value) => { taskValue = value });
-        if (Highlight.isRunningInHighlight()) {
-        }
+        populateUserData();
     });
 </script>
 
-<div>
-
-</div>
 <form class="flex flex-col"
 on:submit={handleSubmit}>
     <label for="username">Username:</label>
-    <input type="text" id="username" bind:value={usernameValue} required>
-  
-    <label for="email">Email:</label>
-    <input type="email" id="email" bind:value={emailValue} required>
+    <input type="text" id="username" bind:value={username} required>
   
     <label for="occupation">Occupation:</label>
-    <input type="text" id="occupation" bind:value={occupationValue} required>
+    <input type="text" id="occupation" bind:value={occupation} required>
   
-    <label for="task">Task:</label>
-    <input type="text" id="task" bind:value={taskValue} required>
-  
-    <button type="submit">Submit</button>
-  </form>
+    <button type="submit">save</button>
+</form>

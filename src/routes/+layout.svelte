@@ -45,19 +45,9 @@
         font-size: 1.5rem;
     }
     :global(p) {
-        color: #bbbbbb;
+        color: #888888;
     }
     :global(button) {
         color: white;
     }
-
-    /* :global(::-webkit-scrollbar) {
-        width: 0.5rem
-    }
-    :global(::-webkit-scrollbar-track) {
-        background: #444444;
-    }
-    :global(::-webkit-scrollbar-thumb) {
-        background: #888888
-    } */
 </style>

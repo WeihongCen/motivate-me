@@ -1,5 +1,10 @@
 <script>
     import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+
+    onMount(() => {
+        goto('/dashboard');
+    })
 </script>
 
 <div class="flex justify-center items-center w-screen h-screen">

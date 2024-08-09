@@ -6,8 +6,8 @@
     export let data;
     const { user } = data;
 
-    const ANALYSIS_DELAY = 20000; // 5 minutes per analysis
-    const SNAPSHOT_DELAY = 5000; // 10 seconds per snapshot
+    const ANALYSIS_DELAY = 10000; // 5 minutes per analysis
+    const SNAPSHOT_DELAY = 2000; // 10 seconds per snapshot
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
 
@@ -64,18 +64,19 @@
         const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
         const startTime = timestamp;
         timestamp = Date.now();
+        // let cleanedBase64String = focusedWindowScreenshot.replace(/^data:image\/[a-z]+;base64,/, '');
 
-        rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
-            console.log("added screenshot");
-            snapshots.push({
-                focusedWindowTitle: focusedWindowTitle,
-                focusedWindowIcon: focusedWindowIcon,
-                base64URL: resizedBase64URL,
-                startTime: startTime,
-                endTime: timestamp,
-            });
-            snapshots = snapshots;
+        // rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
+        console.log("added screenshot");
+        snapshots.push({
+            focusedWindowTitle: focusedWindowTitle,
+            focusedWindowIcon: focusedWindowIcon,
+            base64URL: focusedWindowScreenshot,
+            startTime: startTime,
+            endTime: timestamp,
         });
+        snapshots = snapshots;
+        // });
     }
 
     async function analyzeSnapshots() {
@@ -88,6 +89,7 @@
             }),
         });
         const analysis = await res.json();
+        console.log(analysis);
         snapshots = [];
     }
 
@@ -114,6 +116,8 @@
     }
 
     onMount(() => {
+        canvas = document.createElement('canvas');
+        ctx = canvas.getContext('2d');
         if (Highlight.isRunningInHighlight()) {
         }
     });

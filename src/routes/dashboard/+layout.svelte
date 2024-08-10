@@ -63,9 +63,6 @@
         });
         const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
         const startTime = timestamp;
-        timestamp = Date.now();
-        // let cleanedBase64String = focusedWindowScreenshot.replace(/^data:image\/[a-z]+;base64,/, '');
-
         // rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
         console.log("added screenshot");
         snapshots.push({
@@ -73,9 +70,8 @@
             focusedWindowIcon: focusedWindowIcon,
             base64URL: focusedWindowScreenshot,
             startTime: startTime,
-            endTime: timestamp,
+            endTime: Date.now(),
         });
-        snapshots = snapshots;
         // });
     }
 

@@ -57,7 +57,7 @@ function findMostFrequentWindowSnapshot(data) {
     return { mostFrequentTitle, resultURL };
 }
 
-async function anthropicModel(prompt, mimeType, imageURL, mostFrequentTitle) {
+async function anthropicModel(prompt, imageURL, mostFrequentTitle) {
     const { mimeType, imageData } = getBase64Data(imageURL);
     const res = await anthropic.messages.create({
         model: "claude-3-haiku-20240307",

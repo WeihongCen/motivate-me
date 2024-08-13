@@ -2,5 +2,7 @@
     user: {
 
     },
-    
+    records: {
+        
+    }
 }

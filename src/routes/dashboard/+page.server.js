@@ -11,3 +11,14 @@ export const actions = {
         }
     },
 }
+
+export const load = async ({ locals: { supabase } }) => {
+    let response = await fetch(`/api/getProfile`, {
+        method: "GET"
+    })
+        .then(res => res.json());
+    let username = response.userData.username;
+    let occupation = response.userData.occupation;
+
+    return { username, occupation };
+};

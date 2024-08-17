@@ -26,10 +26,7 @@ function findMostFrequentWindowSnapshot(data) {
     data.forEach(item => {
         const { 
             focusedWindowTitle,
-            focusedWindowIcon,
             base64URL,
-            startTime,
-            endTime,
         } = item;
 
         // Update the count for each title

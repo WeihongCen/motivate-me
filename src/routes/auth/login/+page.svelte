@@ -1,10 +1,34 @@
 <script>
+    import Highlight from "@highlight-ai/app-runtime";
     import { page } from '$app/stores'
+    import { onMount } from "svelte";
     
     const errorMessage = $page.url.searchParams.get('error');
+
+    async function highlightLogin() {
+        // const { accessToken, refreshToken } = await Highlight.auth.signIn();
+        // const validateSessionResponse = await fetch(
+        //     "/api/oauth",
+        //     {
+        //         method: "POST",
+        //         headers: {
+        //             Authorization: `Bearer ${accessToken}`,
+        //         },
+        //         body: JSON.stringify({
+        //             type: "Highlight"
+        //         }),
+        //     }
+        // );
+        console.log(await Highlight.user.getEmail());
+    }
+
+    onMount(async () => {
+        return () => {
+        };
+    });
 </script>
 
-<div class="flex justify-center items-center w-screen h-screen bg-black">
+<div class="flex flex-col justify-center items-center w-screen h-screen bg-black">
     <form class="flex flex-col justify-center items-center min-w-96 p-10 bg-stone-900 rounded-3xl gap-5"
     method="POST" action="?/login">
         <h1>Welcome Back</h1>
@@ -71,4 +95,9 @@
             </a>
         </p>
     </form>
+    <button
+        on:click={highlightLogin}
+    >
+    Sign in with Highlight
+    </button>
 </div>

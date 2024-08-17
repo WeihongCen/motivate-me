@@ -6,7 +6,7 @@
     export let data;
     const { user } = data;
 
-    const ANALYSIS_DELAY = 10000; // 5 minutes per analysis
+    const ANALYSIS_DELAY = 20000; // 5 minutes per analysis
     const SNAPSHOT_DELAY = 2000; // 10 seconds per snapshot
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
@@ -16,19 +16,22 @@
     let canvas; // Used to rescale image in imageToDataURL
     let ctx;
     let snapshots = [];
-    let timestamp;
     let analysisInterval;
     let snapshotInterval;
 
-    recording.subscribe((bRecording) => {
-		if (bRecording) {
-            console.log("recording started.");
-            startRecording();
-        } else {
-            console.log("recording ended.");
-            stopRecording();
-        }
-	});
+    let unsubscribeRecording;
+
+    function subscribeRecording() {
+        unsubscribeRecording = recording.subscribe((bRecording) => {
+            if (bRecording) {
+                console.log("recording started.");
+                startRecording();
+            } else {
+                console.log("recording ended.");
+                stopRecording();
+            }
+        });
+    }
 
     async function populateUserData() {
         let response = await fetch(`/api/getProfile`, {
@@ -36,6 +39,16 @@
         })
             .then(res => res.json());
         occupation = response.userData.occupation;
+    }
+
+    function getDate(timestamp) {
+        const today = new Date(timestamp);
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+
+        const formattedDate = `${year}-${month}-${day}`;
+        return formattedDate;
     }
 
     function rescaleImage(imageURL, callback) {
@@ -62,39 +75,58 @@
             }
         });
         const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
-        const startTime = timestamp;
-        // rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
-        console.log("added screenshot");
+        const timestamp = Date.now();
         snapshots.push({
             focusedWindowTitle: focusedWindowTitle,
             focusedWindowIcon: focusedWindowIcon,
             base64URL: focusedWindowScreenshot,
-            startTime: startTime,
-            endTime: Date.now(),
+            timestamp: timestamp
         });
+        Highlight.appStorage.set(`snapshots/${timestamp}`, {
+            focusedWindowTitle: focusedWindowTitle,
+            focusedWindowIcon: focusedWindowIcon,
+        });
+        // rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
         // });
     }
 
     async function analyzeSnapshots() {
-        populateUserData();
-        const res = await fetch(`/api/describe`, {
-            method: "POST",
-            body: JSON.stringify({ 
-                snapshots: snapshots,
-                occupation: occupation,
-            }),
-        });
-        const analysis = await res.json();
-        console.log(analysis);
-        snapshots = [];
+        if (snapshots.length > 0) {
+            populateUserData();
+            const res = await fetch(`/api/describe`, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    snapshots: snapshots,
+                    occupation: occupation,
+                }),
+            });
+            const analysis = await res.json();
+            console.log(analysis);
+            
+            const analysisTime = snapshots[0].timestamp;
+            let analysisSnapshots = [];
+            snapshots.forEach(snapshot => {
+                analysisSnapshots = [...analysisSnapshots, `snapshots/${snapshot.timestamp}`];
+            });
+
+            const date = getDate(analysisTime);
+            let calendar = Highlight.appStorage.get(`calendar/${date}`);
+            if (calendar) {
+                calendar = [...calendar, analysisSnapshots];
+            } else {
+                calendar = analysisSnapshots;
+            }
+            Highlight.appStorage.set(`calendar/${date}`, calendar);
+            snapshots = [];
+        }
     }
 
     async function startRecording() {
         if (Highlight.isRunningInHighlight()) {
             try {
                 let screenshotPermission = await Highlight.permissions.requestScreenshotPermission();
+                await Highlight.appStorage.whenHydrated();
                 if (screenshotPermission) {
-                    timestamp = Date.now(); // Initialize start timestamp
                     snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
                     analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
                 }
@@ -115,7 +147,14 @@
         canvas = document.createElement('canvas');
         ctx = canvas.getContext('2d');
         if (Highlight.isRunningInHighlight()) {
+            subscribeRecording()
         }
+
+        return () => {
+            if (Highlight.isRunningInHighlight()) {
+                unsubscribeRecording();
+            }
+        };
     });
 </script>
 

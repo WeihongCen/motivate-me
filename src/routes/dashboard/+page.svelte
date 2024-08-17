@@ -6,26 +6,27 @@
     import { recording } from '$lib/store.js';
     
     export let data;
-    const { supabase, user } = data;
+    const { supabase, user, username, occupation } = data;
 
-    let username = "";
-    let occupation = "";
+    // let username = "";
+    // let occupation = "";
     let recordingValue;
     recording.subscribe((value) => {
 		recordingValue = value;
 	});
 
     async function populateUserData() {
-        let response = await fetch(`/api/getProfile`, {
-            method: "GET"
-        })
-            .then(res => res.json());
-        username = response.userData.username;
-        occupation = response.userData.occupation;
+        // let response = await fetch(`/api/getProfile`, {
+        //     method: "GET"
+        // })
+        //     .then(res => res.json());
+        // username = response.userData.username;
+        // occupation = response.userData.occupation;
     }
 
     onMount(async () => {
-        await populateUserData();
+        // await populateUserData();
+        
 
         return () => {
         };
@@ -40,12 +41,7 @@
             >
                 {username}
             </h2>
-            <p  
-                class="overflow-hidden text-ellipsis"
-            >
-                {user.email}
-            </p>
-        {:else}
+        {:else if user.email}
             <h2
                 class="overflow-hidden text-ellipsis"
             >

@@ -93,7 +93,7 @@ export const POST = async ({ request }) => {
         const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots);
         let prompt = `
             Describe what the user is doing using a screenshot and the name of the window.
-            Keep your answer concise.
+            Keep your answer under 100 words.
             In addition, determine if the user is productive or not based on their occupation.
 
             User occupation: ${occupation}
@@ -127,7 +127,7 @@ export const POST = async ({ request }) => {
             response_format: { type: "json_object" },
             max_tokens: 200,
         });
-        return response.choices[0].message.content;
+        return json(response.choices[0].message.content);
     } catch (error) {
         console.log(error.message);
         return json({ error: error.message }, { status: 400 });

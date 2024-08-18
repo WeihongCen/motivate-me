@@ -5,24 +5,7 @@
     
     const errorMessage = $page.url.searchParams.get('error');
 
-    async function highlightLogin() {
-        // const { accessToken, refreshToken } = await Highlight.auth.signIn();
-        // const validateSessionResponse = await fetch(
-        //     "/api/oauth",
-        //     {
-        //         method: "POST",
-        //         headers: {
-        //             Authorization: `Bearer ${accessToken}`,
-        //         },
-        //         body: JSON.stringify({
-        //             type: "Highlight"
-        //         }),
-        //     }
-        // );
-        console.log(await Highlight.user.getEmail());
-    }
-
-    onMount(async () => {
+    onMount(() => {
         return () => {
         };
     });
@@ -95,9 +78,4 @@
             </a>
         </p>
     </form>
-    <button
-        on:click={highlightLogin}
-    >
-    Sign in with Highlight
-    </button>
 </div>

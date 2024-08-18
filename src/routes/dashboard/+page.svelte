@@ -8,25 +8,12 @@
     export let data;
     const { supabase, user, username, occupation } = data;
 
-    // let username = "";
-    // let occupation = "";
     let recordingValue;
     recording.subscribe((value) => {
 		recordingValue = value;
 	});
 
-    async function populateUserData() {
-        // let response = await fetch(`/api/getProfile`, {
-        //     method: "GET"
-        // })
-        //     .then(res => res.json());
-        // username = response.userData.username;
-        // occupation = response.userData.occupation;
-    }
-
     onMount(async () => {
-        // await populateUserData();
-        
 
         return () => {
         };

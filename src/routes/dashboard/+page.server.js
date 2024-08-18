@@ -12,13 +12,19 @@ export const actions = {
     },
 }
 
-export const load = async ({ locals: { supabase } }) => {
-    let response = await fetch(`/api/getProfile`, {
-        method: "GET"
-    })
-        .then(res => res.json());
-    let username = response.userData.username;
-    let occupation = response.userData.occupation;
-
-    return { username, occupation };
+export const load = async ({ locals: { supabase, user } }) => {
+    try {
+        if (user) {
+            let response = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url, occupation')
+                .eq('id', user.id);
+            return { username: response.data[0].username, occupation: response.data[0].occupation };
+        } else {
+            return { username: null, occupation: null };
+        }
+    } catch (error) {
+        console.log(error.message);
+        return { username: null, occupation: null };
+    }
 };

@@ -6,8 +6,8 @@
     export let data;
     const { user } = data;
 
-    const ANALYSIS_DELAY = 6000;
-    const SNAPSHOT_DELAY = 2000;
+    const ANALYSIS_DELAY = 15000;
+    const SNAPSHOT_DELAY = 5000;
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
 
@@ -18,6 +18,7 @@
     let snapshots = [];
     let analysisInterval;
     let snapshotInterval;
+    let snapshotTimestamp;
 
     let unsubscribeRecording;
 
@@ -65,28 +66,28 @@
     }
 
     async function takeSnapshot() {
-        const context = await Highlight.user.getContext();
-        const focusedWindowTitle = context.application.focusedWindow.title;
-        console.log(`snapshot ${focusedWindowTitle}`);
-        let focusedWindowIcon;
         const windows = await Highlight.user.getWindows();
-        windows.forEach(window => {
-            if (window.windowTitle === focusedWindowTitle) {
-                focusedWindowIcon = window.appIcon;
-            }
-        });
+        const focusedWindowTitle = windows[0].windowTitle;
+        const focusedWindowIcon = windows[0].appIcon;
         const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
-        const timestamp = Date.now();
-        snapshots.push({
+        console.log(`snapshot ${focusedWindowTitle}`);
+        if (!focusedWindowTitle) {
+            console.log("NO FOCUSED WINDOW");
+        }
+        if (!focusedWindowScreenshot) {
+            console.log("NO SCREENSHOT FOUND");
+        }
+        let newSnapshot = {
             focusedWindowTitle: focusedWindowTitle,
+            focusedWindowApp: focusedWindowTitle.split(" - ").at(-1),
             focusedWindowIcon: focusedWindowIcon,
             base64URL: focusedWindowScreenshot,
-            timestamp: timestamp
-        });
-        Highlight.appStorage.set(`snapshots/${timestamp}`, {
-            focusedWindowTitle: focusedWindowTitle,
-            focusedWindowIcon: focusedWindowIcon,
-        });
+            startTime: snapshotTimestamp,
+            endTime: snapshotTimestamp = Date.now(),
+        };
+        snapshots.push(newSnapshot);
+        const { base64URL, ...snapshotMetadata } = newSnapshot;
+        Highlight.appStorage.set(`snapshots/${newSnapshot.startTime}`, snapshotMetadata);
         // rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
         // });
     }
@@ -103,32 +104,40 @@
             })
                 .then(res => res.json())
                 .then(res => JSON.parse(res));
+
+            // const analysis = {
+            //     productive: "true",
+            //     description: "this is an example description",
+            // }
+            console.log(analysis.description);
             
-            const analysisTime = snapshots[0].timestamp;
-            let analysisSnapshots = [];
-            snapshots.forEach(snapshot => {
-                analysisSnapshots = [...analysisSnapshots, `snapshots/${snapshot.timestamp}`];
+            const snapshotKeys = snapshots.map(snapshot => `snapshots/${snapshot.startTime}`);
+            const analysisStartTime = snapshots[0].startTime;
+            const analysisEndTime = snapshots.at(-1).endTime;
+            const date = getDate(analysisStartTime);
+            Highlight.appStorage.set(`analysis/${analysisStartTime}`, {
+                ...analysis,
+                snapshotKeys,
+                analysisStartTime,
+                analysisEndTime,
             });
 
-            const date = getDate(analysisTime);
             let calendarSnapshots = Highlight.appStorage.get(`calendar/${date}/snapshots`);
             if (calendarSnapshots) {
-                calendarSnapshots = [...calendarSnapshots, analysisSnapshots];
+                calendarSnapshots = [...calendarSnapshots, ...snapshotKeys];
             } else {
-                calendarSnapshots = analysisSnapshots;
+                calendarSnapshots = snapshotKeys;
             }
-            let calendarAnalysis = Highlight.appStorage.get(`calendar/${date}/analysis`);
-            if (calendarSnapshots) {
-                calendarSnapshots = [...calendarSnapshots, analysisSnapshots];
-            } else {
-                calendarSnapshots = analysisSnapshots;
-            }
-            Highlight.appStorage.set(`analysis/${analysisTime}`, analysisSnapshots);
-            
-
-
             Highlight.appStorage.set(`calendar/${date}/snapshots`, calendarSnapshots);
-            Highlight.appStorage.set(`calendar/${date}/analysis`, `analysis/${analysisTime}`);
+
+            let calendarAnalysis = Highlight.appStorage.get(`calendar/${date}/analysis`);
+            if (calendarAnalysis) {
+                calendarAnalysis = [...calendarAnalysis, `analysis/${analysisStartTime}`];
+            } else {
+                calendarAnalysis = [`analysis/${analysisStartTime}`];
+            }
+            Highlight.appStorage.set(`calendar/${date}/analysis`, calendarAnalysis);
+
 
 
 

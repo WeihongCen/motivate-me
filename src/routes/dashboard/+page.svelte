@@ -13,6 +13,18 @@
 		recordingValue = value;
 	});
 
+    async function test() {
+        let keys = Highlight.appStorage.get(`calendar/2024-08-18/analysis`);
+        keys.forEach(key => {
+            let analysis = Highlight.appStorage.get(key);
+            console.log(JSON.stringify(analysis));
+        });
+    }
+
+    async function clear() {
+        Highlight.appStorage.clear();
+    }
+
     onMount(async () => {
 
         return () => {
@@ -55,6 +67,14 @@
                 Stop
             </button>
         {/if}
+        <button class="bg-blue-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
+        on:click={test}>
+            test
+        </button>
+        <button class="bg-red-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
+        on:click={clear}>
+            clear
+        </button>
     </div>
     <div class="col-span-2 col-start-4 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
     </div>

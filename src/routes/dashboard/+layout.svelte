@@ -6,8 +6,8 @@
     export let data;
     const { user } = data;
 
-    const ANALYSIS_DELAY = 15000;
-    const SNAPSHOT_DELAY = 5000;
+    const ANALYSIS_DELAY = 300000;
+    const SNAPSHOT_DELAY = 10000;
     const RESCALE_WIDTH = 960;
     const RESCALE_HEIGHT = 540;
 
@@ -80,7 +80,6 @@
         let newSnapshot = {
             focusedWindowTitle: focusedWindowTitle,
             focusedWindowApp: focusedWindowTitle.split(" - ").at(-1),
-            focusedWindowIcon: focusedWindowIcon,
             base64URL: focusedWindowScreenshot,
             startTime: snapshotTimestamp,
             endTime: snapshotTimestamp = Date.now(),
@@ -88,6 +87,7 @@
         snapshots.push(newSnapshot);
         const { base64URL, ...snapshotMetadata } = newSnapshot;
         Highlight.appStorage.set(`snapshots/${newSnapshot.startTime}`, snapshotMetadata);
+        Highlight.appStorage.set(`appIcons/${newSnapshot.focusedWindowApp}`, focusedWindowIcon);
         // rescaleImage(focusedWindowScreenshot, async (resizedBase64URL) => {
         // });
     }
@@ -104,11 +104,6 @@
             })
                 .then(res => res.json())
                 .then(res => JSON.parse(res));
-
-            // const analysis = {
-            //     productive: "true",
-            //     description: "this is an example description",
-            // }
             console.log(analysis.description);
             
             const snapshotKeys = snapshots.map(snapshot => `snapshots/${snapshot.startTime}`);
@@ -122,14 +117,6 @@
                 analysisEndTime,
             });
 
-            let calendarSnapshots = Highlight.appStorage.get(`calendar/${date}/snapshots`);
-            if (calendarSnapshots) {
-                calendarSnapshots = [...calendarSnapshots, ...snapshotKeys];
-            } else {
-                calendarSnapshots = snapshotKeys;
-            }
-            Highlight.appStorage.set(`calendar/${date}/snapshots`, calendarSnapshots);
-
             let calendarAnalysis = Highlight.appStorage.get(`calendar/${date}/analysis`);
             if (calendarAnalysis) {
                 calendarAnalysis = [...calendarAnalysis, `analysis/${analysisStartTime}`];
@@ -137,9 +124,6 @@
                 calendarAnalysis = [`analysis/${analysisStartTime}`];
             }
             Highlight.appStorage.set(`calendar/${date}/analysis`, calendarAnalysis);
-
-
-
 
             snapshots = [];
         }
@@ -151,6 +135,7 @@
                 let screenshotPermission = await Highlight.permissions.requestScreenshotPermission();
                 await Highlight.appStorage.whenHydrated();
                 if (screenshotPermission) {
+                    snapshotTimestamp = Date.now();
                     snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
                     analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
                 }

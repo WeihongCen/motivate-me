@@ -6,19 +6,23 @@
     let piechartCanvas;
 
     const solidColors = [
-        '#6df395',
-        '#f3726c',
-        '#ffffff'
+        '#86efac',
+        '#fca5a5',
+        '#eaeaea'
     ];
-  
+
+    let chart;
+
     onMount(() => {
-        const rootStyles = getComputedStyle(document.documentElement);
-        const transparentColors = [
-            rootStyles.getPropertyValue('--color-productive'),
-            rootStyles.getPropertyValue('--color-unproductive'),
-            rootStyles.getPropertyValue('--color-idle')
-        ];
-        new Chart(piechartCanvas.getContext("2d"), {
+        createChart();
+    });
+
+    $: if (statistics) {
+        updateChart();
+    }
+
+    function createChart() {
+        chart = new Chart(piechartCanvas.getContext("2d"), {
             type: "doughnut",
             data: {
                 labels: [
@@ -29,8 +33,8 @@
                 datasets: [{
                     label: 'Productivity',
                     data: statistics,
-                    backgroundColor: transparentColors,
-                    hoverBackgroundColor: transparentColors,
+                    backgroundColor: solidColors,
+                    hoverBackgroundColor: solidColors,
                     borderColor: solidColors,
                     hoverBorderColor: solidColors,
                     borderAlign: 'center',
@@ -43,6 +47,13 @@
                 layout: {
                     padding: 20
                 },
+                onHover: (e, element) => {
+                    if (element.length) {
+                        e.native.target.style.cursor = "pointer";
+                    } else {
+                        e.native.target.style.cursor = "default";
+                    }
+                },
                 plugins: {
                     tooltip: {
                         enabled: false
@@ -53,7 +64,14 @@
                 },
             },
         });
-    });
+    }
+
+    function updateChart() {
+        if (chart) {
+            chart.data.datasets[0].data = statistics;
+            chart.update();
+        }
+    }
 </script>
 
 <canvas class="max-h-full" bind:this={piechartCanvas} />

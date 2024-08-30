@@ -3,52 +3,24 @@
     import Chart from "chart.js/auto";
     import 'chartjs-adapter-luxon';
 
+    export let statistics;
     let timelineChart;
-    
+    let chart;
+    let selectedData;
+
     onMount(() => {
-        const rootStyles = getComputedStyle(document.documentElement);
-        new Chart(timelineChart,{
+        createChart();
+    });
+
+    $: if (statistics) {
+        updateChart();
+    }
+
+    function createChart() {
+        chart = new Chart(timelineChart, {
             type: 'bar',
             data: {
-                datasets: [
-                    {
-                        label: "productive",
-                        data: [
-                            {
-                                x: [new Date('2022-12-24T00:30'), new Date('2022-12-24T01:00')],
-                                y: 'Status',
-                            },
-                            {
-                                x: [new Date('2022-12-24T00:05'), new Date('2022-12-24T00:15')],
-                                y: 'Status',
-                            },
-                        ],
-                        backgroundColor: rootStyles.getPropertyValue('--color-productive'),
-                        hoverBackgroundColor: rootStyles.getPropertyValue('--color-productive'),
-                    },
-                    {
-                        label: "unproductive",
-                        data: [
-                            {
-                                x: [new Date('2022-12-24T00:20'), new Date('2022-12-24T00:30')],
-                                y: 'Status'
-                            },
-                        ],
-                        backgroundColor: rootStyles.getPropertyValue('--color-unproductive'),
-                        hoverBackgroundColor: rootStyles.getPropertyValue('--color-unproductive'),
-                    },
-                    {
-                        label: "idle",
-                        data: [
-                            {
-                                x: [new Date('2022-12-24T00:15'), new Date('2022-12-24T00:20')],
-                                y: 'Status'
-                            },
-                        ],
-                        backgroundColor: rootStyles.getPropertyValue('--color-idle'),
-                        hoverBackgroundColor: rootStyles.getPropertyValue('--color-idle'),
-                    },
-                ],
+                datasets: statistics.datasets
             },
             options: {
                 indexAxis: 'y',
@@ -70,8 +42,8 @@
                             tickWidth: 2,
                             lineWidth: 0,
                         },
-                        min: new Date('2022-12-24T00:00'),
-                        max: new Date('2022-12-24T01:00'),
+                        min: new Date(statistics.curTime - 60 * 60 * 1000),
+                        max: new Date(statistics.curTime),
                     },
                     y: {
                         beginAtZero: true,
@@ -87,6 +59,22 @@
                         }
                     },
                 },
+                onHover: (e, element) => {
+                    if (element.length) {
+                        e.native.target.style.cursor = "pointer";
+                        chart.update();
+                    } else {
+                        e.native.target.style.cursor = "default";
+                    }
+                },
+                animation: false,
+                onClick: (e, element) => {
+                    if (element.length) {
+                        selectedData = chart.data.datasets[element.at(0).datasetIndex];
+                    } else {
+                        selectedData = null;
+                    }
+                },
                 plugins: {
                     tooltip: {
                         enabled: false
@@ -98,7 +86,21 @@
                 maintainAspectRatio: false,
             },
         });
-    });
+    }
+
+    function updateChart() {
+        if (chart) {
+            chart.data.datasets = statistics.datasets;
+            chart.options.scales.x.min = new Date(statistics.curTime - 60 * 60 * 1000);
+            chart.options.scales.x.max = new Date(statistics.curTime);
+            chart.update();
+        }
+    }
 </script>
 
-<canvas class="max-h-full" bind:this={timelineChart} />
+<canvas class="max-h-full" bind:this={timelineChart}/>
+
+{#if selectedData}
+    <p>{selectedData.data[0].x}</p>
+    <p>{selectedData.label}</p>
+{/if}

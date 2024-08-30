@@ -3,37 +3,122 @@
     import ProductivityPie from "$lib/ProductivityPie.svelte";
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
-    import { recording } from '$lib/store.js';
+    import { 
+        recording 
+    } from '$lib/store.js';
+    import {
+        GREEN,
+        RED,
+        PRODUCTIVE_ICON,
+        UNPRODUCTIVE_ICON,
+        PRODUCTIVE_DESCRIPTION,
+        UNPRODUCTIVE_DESCRIPTION
+    } from "$lib/const.js";
     
     export let data;
     const { supabase, user, username, occupation } = data;
 
+    let unsubscribeRecording;
     let recordingValue;
-    recording.subscribe((value) => {
-		recordingValue = value;
-	});
+    let productivity = [300, 50, 20];
+    let hourlyActivity = {
+        curTime: Date.now(),
+        datasets: [],
+    };
 
-    async function test() {
-        let keys = Highlight.appStorage.get(`calendar/2024-08-18/analysis`);
-        keys.forEach(key => {
-            let analysis = Highlight.appStorage.get(key);
-            console.log(JSON.stringify(analysis));
-        });
+    function getDate(timestamp) {
+        const today = new Date(timestamp);
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+
+        const formattedDate = `${year}-${month}-${day}`;
+        return formattedDate;
     }
 
-    async function clear() {
+    async function populateHourlyActivity() {
+        let curTime = 1724968905828;
+        let newHourlyActivity = {
+            curTime: curTime,
+            datasets: [],
+        };
+        for (let i = curTime; i > curTime - 60*60*1000; i -= 300000) {
+            const analysisTimeKey = Math.round(i / 300000) * 300000;
+            const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
+            if (analysis) {
+                const productivityColor = analysis.productive ? GREEN : RED;
+                const hoverColor = analysis.productive ? "#96eeb6" : "#ffb7b7";
+                newHourlyActivity.datasets.push({
+                    label: analysis.description,
+                    data: [
+                        {
+                            x: [new Date(analysis.analysisStartTime), new Date(analysis.analysisEndTime)],
+                            y: "Status",
+                        },
+                    ],
+                    backgroundColor: productivityColor,
+                    hoverBackgroundColor: hoverColor,
+                });
+            }
+        }
+        hourlyActivity = newHourlyActivity;
+    }
+
+    async function populateTestDataset() {
+        await Highlight.appStorage.whenHydrated();
         Highlight.appStorage.clear();
-    }
+        let testSnapshots = [];
+        let currentTime = Date.now();
+        let productivity = 0;
+        for (let i = currentTime - 60*60*1000; i < currentTime;) {
+            const productive = Math.random() > 0.5;
+            productivity += productive;
+            const snapshotMetadata = {
+                focusedWindowTitle: "app header - " + productive ? "productive app" : "unproductive app",
+                focusedWindowApp: productive ? "productive app" : "unproductive app",
+                startTime: i,
+                endTime: i += 10*1000,
+            }
+            const timeKey = Math.round(snapshotMetadata.startTime / 10000) * 10000;
+            Highlight.appStorage.set(`snapshots/${timeKey}`, snapshotMetadata);
+            Highlight.appStorage.set(`appIcons/${snapshotMetadata.focusedWindowApp}`, productive ? PRODUCTIVE_ICON : UNPRODUCTIVE_ICON);
+            testSnapshots = [...testSnapshots, snapshotMetadata];
+            
+            if (testSnapshots.length >= 30) {
+                const analysisTimeKey = Math.round(testSnapshots[0].startTime / 300000) * 300000;
+                const generalProductivity = productivity >= 15;
+                Highlight.appStorage.set(`analysis/${analysisTimeKey}`, {
+                    productive: generalProductivity,
+                    description: generalProductivity ? PRODUCTIVE_DESCRIPTION : UNPRODUCTIVE_DESCRIPTION,
+                    analysisStartTime: analysisTimeKey,
+                    analysisEndTime: analysisTimeKey + 300000,
+                });
+                productivity = 0;
+                testSnapshots = []
+            }
+        }
+
+        for (let i = currentTime - 60*60*1000; i < currentTime; i += 5*10*1000) {
+
+        }
+
+    } 
 
     onMount(async () => {
+        unsubscribeRecording = recording.subscribe((value) => {
+            recordingValue = value;
+	    });
 
         return () => {
+            unsubscribeRecording();
         };
     });
-</script>
 
+    $: hourlyActivity;
+</script>
+<!-- <CustomCursor /> -->
 <div class="w-full grid grid-cols-5 grid-rows-3 gap-5 p-5">
-    <div class="col-span-2 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
+    <div class="col-span-2 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
         {#if username}
             <h2 
                 class="overflow-hidden text-ellipsis"
@@ -55,7 +140,7 @@
             </p>
         {/if}
     </div>
-    <div class="flex flex-col gap-2 col-span-1 col-start-3 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
+    <div class="flex flex-col gap-2 col-span-1 col-start-3 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
         {#if !recordingValue}
             <button class="bg-[#ff9457] px-4 py-2 hover:opacity-80 transition-all duration-300"
             on:click={ () => { recording.set(true) } }>
@@ -67,27 +152,28 @@
                 Stop
             </button>
         {/if}
-        <button class="bg-blue-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
-        on:click={test}>
-            test
-        </button>
+    </div>
+    <div class="col-span-2 col-start-4 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
         <button class="bg-red-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
-        on:click={clear}>
-            clear
+        on:click={populateTestDataset}>
+            generate test dataset (will blow up your computer)
         </button>
     </div>
-    <div class="col-span-2 col-start-4 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
-    </div>
-    <div class="flex flex-col col-span-2 row-start-2 row-span-2 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
-        <h2>You are <span class={`text-[var(--color-productive)]`}>productive</span></h2>
+    <div class="flex flex-col col-span-2 row-start-2 row-span-2 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
+        <h2>{getDate(Date.now())}</h2>
+        <p>You are <span class={`text-[var(--color-productive)]`}>productive</span></p>
         <div class="flex justify-center items-center w-full h-full">
-            <ProductivityPie statistics={[300, 50, 20]} />
+            <ProductivityPie statistics={productivity} />
         </div>
     </div>
-    <div class="flex flex-col gap-5 col-span-3 row-start-2 row-span-2 col-start-3 p-5 bg-stone-500 bg-opacity-30 rounded-3xl">
+    <div class="flex flex-col gap-5 col-span-3 row-start-2 row-span-2 col-start-3 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
+        <button class="bg-blue-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
+        on:click={populateHourlyActivity}>
+            populate
+        </button>
         <h2>Past hour activity</h2>
         <div class="flex flex-col w-full h-1/5 gap-5">
-            <TimelineChart />
+            <TimelineChart statistics={hourlyActivity} />
         </div>
         <p class="relative h-full overflow-auto">
         </p>

@@ -21,10 +21,7 @@
     let unsubscribeRecording;
     let recordingValue;
     let productivity = [300, 50, 20];
-    let hourlyActivity = {
-        curTime: Date.now(),
-        datasets: [],
-    };
+    let hourlyActivity = 0;
 
     function getDate(timestamp) {
         const today = new Date(timestamp);
@@ -37,31 +34,7 @@
     }
 
     async function populateHourlyActivity() {
-        let curTime = 1724968905828;
-        let newHourlyActivity = {
-            curTime: curTime,
-            datasets: [],
-        };
-        for (let i = curTime; i > curTime - 60*60*1000; i -= 300000) {
-            const analysisTimeKey = Math.round(i / 300000) * 300000;
-            const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
-            if (analysis) {
-                const productivityColor = analysis.productive ? GREEN : RED;
-                const hoverColor = analysis.productive ? "#96eeb6" : "#ffb7b7";
-                newHourlyActivity.datasets.push({
-                    label: analysis.description,
-                    data: [
-                        {
-                            x: [new Date(analysis.analysisStartTime), new Date(analysis.analysisEndTime)],
-                            y: "Status",
-                        },
-                    ],
-                    backgroundColor: productivityColor,
-                    hoverBackgroundColor: hoverColor,
-                });
-            }
-        }
-        hourlyActivity = newHourlyActivity;
+        hourlyActivity += 1;
     }
 
     async function populateTestDataset() {

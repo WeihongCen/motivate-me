@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import CalendarSVG from "$lib/icons/CalendarSVG.svelte";
+    import MonitorSVG from "$lib/icons/MonitorSVG.svelte";
     import TargetSVG from "$lib/icons/TargetSVG.svelte";
     import CommunitySVG from "$lib/icons/CommunitySVG.svelte";
 
@@ -23,28 +23,36 @@
 
 <section class="py-24">
     <div class="container mx-auto px-6">
-        <h2 class="text-4xl font-bold mb-16 text-center">AI-Driven Goal Achievement</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div class="text-center">
-                <div class="text-orange-400 text-5xl mb-6 flex justify-center items-center">
-                    <CalendarSVG width="1.5em" height="1.5em" />
+        <h2 class="text-4xl font-bold mb-16 text-center text-white">AI-Driven Goal Achievement</h2>
+        <div class="flex justify-center">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-7xl">
+                <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm p-8 w-80 h-80 flex flex-col shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
+                    <div class="flex items-center h-20 mb-4">
+                        <div class="text-orange-400 mr-4">
+                            <MonitorSVG width="3em" height="3em" />
+                        </div>
+                        <h3 class="text-2xl font-semibold text-white">Intelligent Screen Tracking</h3>
+                    </div>
+                    <p class="text-gray-300 text-lg flex-grow">Our AI monitors your screen activity to understand your work patterns and productivity levels.</p>
                 </div>
-                <h3 class="text-2xl font-semibold mb-4">Intelligent Screen Tracking</h3>
-                <p class="text-gray-300">Our AI monitors your screen activity to understand your work patterns and productivity levels.</p>
-            </div>
-            <div class="text-center">
-                <div class="text-orange-400 text-5xl mb-6 flex justify-center items-center">
-                    <TargetSVG width="1.5em" height="1.5em" />
+                <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm p-8 w-80 h-80 flex flex-col shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
+                    <div class="flex items-center h-20 mb-4">
+                        <div class="text-orange-400 mr-4">
+                            <TargetSVG width="3em" height="3em" />
+                        </div>
+                        <h3 class="text-2xl font-semibold text-white">Adaptive Goal Tracking</h3>
+                    </div>
+                    <p class="text-gray-300 text-lg flex-grow">AI analyzes your progress and adjusts your goals in real-time for optimal achievement.</p>
                 </div>
-                <h3 class="text-2xl font-semibold mb-4">Adaptive Goal Tracking</h3>
-                <p class="text-gray-300">AI analyzes your progress and adjusts your goals in real-time for optimal achievement.</p>
-            </div>
-            <div class="text-center">
-                <div class="text-orange-400 text-5xl mb-6 flex justify-center items-center">
-                    <CommunitySVG width="1.5em" height="1.5em" />
+                <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm p-8 w-80 h-80 flex flex-col shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
+                    <div class="flex items-center h-20 mb-4">
+                        <div class="text-orange-400 mr-4">
+                            <CommunitySVG width="3em" height="3em" />
+                        </div>
+                        <h3 class="text-2xl font-semibold text-white leading-tight">Discord Community</h3>
+                    </div>
+                    <p class="text-gray-300 text-lg flex-grow">Join our vibrant Discord community to share tips, ask questions, and stay motivated alongside like-minded individuals.</p>
                 </div>
-                <h3 class="text-2xl font-semibold mb-4">Supportive Discord Community</h3>
-                <p class="text-gray-300">Join our vibrant Discord community to share tips, ask questions, and stay motivated alongside like-minded individuals.</p>
             </div>
         </div>
     </div>

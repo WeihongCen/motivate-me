@@ -3,9 +3,15 @@
     import { onMount } from "svelte";
     import EyeOpenSVG from "$lib/icons/EyeOpenSVG.svelte";
     import EyeClosedSVG from "$lib/icons/EyeClosedSVG.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
     
     const errorMessage = $page.url.searchParams.get('error');
     let showPassword = false;
+    let isLoading = false;
+
+    function handleSubmit() {
+        isLoading = true;
+    }
 
     onMount(() => {
         return () => {
@@ -15,7 +21,7 @@
 
 <div class="min-h-screen flex items-center justify-center bg-no-repeat bg-cover bg-center">
     <div class="bg-black p-8 rounded-3xl w-full max-w-md">
-        <form class="flex flex-col gap-6" method="POST" action="?/login">
+        <form class="flex flex-col gap-6" method="POST" action="?/login" on:submit={handleSubmit}>
             <h1 class="text-3xl font-bold text-center text-white mb-2">Welcome Back</h1>
 
             <div class="relative">
@@ -53,9 +59,15 @@
             </div>
 
             <button
-                class="w-full bg-orange-400 text-black font-semibold py-3 rounded-lg hover:bg-orange-500 transition duration-300"
+                type="submit"
+                class="w-full bg-orange-400 text-black font-semibold py-3 rounded-lg hover:bg-orange-500 transition duration-300 flex items-center justify-center"
+                disabled={isLoading}
             >
-                Sign In
+                {#if isLoading}
+                    <Spinner size="24px" color="#000000" />
+                {:else}
+                    Sign In
+                {/if}
             </button>
 
             {#if errorMessage}

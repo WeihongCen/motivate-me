@@ -6,27 +6,25 @@
     import {
         GREEN,
         RED,
-        PRODUCTIVE_ICON,
-        UNPRODUCTIVE_ICON,
-        PRODUCTIVE_DESCRIPTION,
-        UNPRODUCTIVE_DESCRIPTION
     } from "$lib/const.js";
 
     export let statistics;
     let timelineChart;
     let chart;
     let selectedTime;
+    let selectedAnalysis;
     let appDetails = {};
+    let selectedSnapshots = [];
 
-    onMount(() => {
-        createChart();
+    onMount(async () => {
+        await createChart();
     });
 
     $: if (statistics) {
         updateChart();
     }
 
-    function createChart() {
+    async function createChart() {
         chart = new Chart(timelineChart, {
             type: 'bar',
             data: {
@@ -77,23 +75,28 @@
                         e.native.target.style.cursor = "default";
                     }
                 },
-                animation: false,
+                animation: true,
                 onClick: async (e, element) => {
                     if (element.length) {
                         await Highlight.appStorage.whenHydrated();
                         selectedTime = chart.data.datasets[element.at(0).datasetIndex].label;
+                        selectedAnalysis = Highlight.appStorage.get(`analysis/${selectedTime}`);
                         appDetails = {};
-                        for (let i = selectedTime; i < selectedTime + 5*60*1000; i += 10*1000) {
+                        for (let i = selectedAnalysis.startTime; i < selectedAnalysis.endTime; i += 10000) {
                             let snapshot = Highlight.appStorage.get(`snapshots/${i}`);
-                            if (appDetails[snapshot.focusedWindowApp]) {
-                                appDetails[snapshot.focusedWindowApp].count += snapshot.endTime - snapshot.startTime;
-                            } else {
-                                appDetails[snapshot.focusedWindowApp] = {
-                                    time: snapshot.endTime - snapshot.startTime,
-                                    icon: Highlight.appStorage.get(`appIcon/${snapshot.focusedWindowApp}`)
+                            if (snapshot) {
+                                if (appDetails[snapshot.focusedWindowApp]) {
+                                    appDetails[snapshot.focusedWindowApp].time += snapshot.endTime - snapshot.startTime;
+                                } else {
+                                    appDetails[snapshot.focusedWindowApp] = {
+                                        time: snapshot.endTime - snapshot.startTime,
+                                        icon: Highlight.appStorage.get(`appIcons/${snapshot.focusedWindowApp}`)
+                                    }
                                 }
                             }
                         }
+                        selectedSnapshots = Object.entries(appDetails);
+                        selectedSnapshots.sort((a, b) => b[1].time - a[1].time);
                     } else {
                         selectedTime = null;
                     }
@@ -109,11 +112,13 @@
                 maintainAspectRatio: false,
             },
         });
-        updateChart();
+
+        await updateChart();
     }
 
-    function updateChart() {
+    async function updateChart() {
         if (chart) {
+            await Highlight.appStorage.whenHydrated();
             let curTime = 1724968905828;
             curTime = Math.round(curTime / 300000) * 300000;
             let datasets = [];
@@ -124,10 +129,10 @@
                     const productivityColor = analysis.productive ? GREEN : RED;
                     const hoverColor = analysis.productive ? "#96eeb6" : "#ffb7b7";
                     datasets.push({
-                        label: analysis.analysisStartTime,
+                        label: analysis.startTime,
                         data: [
                             {
-                                x: [new Date(analysis.analysisStartTime), new Date(analysis.analysisEndTime)],
+                                x: [new Date(analysis.startTime), new Date(analysis.endTime)],
                                 y: "Status",
                             },
                         ],
@@ -147,6 +152,25 @@
 
 <canvas class="max-h-full" bind:this={timelineChart}/>
 
-{#if selectedTime}
-    <p>{selectedTime}</p>
+{#if selectedAnalysis}
+    <p class={`${selectedAnalysis.productive ? `text-[#86efac]` : `text-[#fca5a5]`}`}>
+        {selectedAnalysis.description}
+    </p>
+    {#each selectedSnapshots as snapshot}
+        <div
+            class="grid grid-cols-5 gap-4"
+        >
+            <img 
+                class="size-6"
+                src={snapshot[1].icon} alt="app icon">
+            <p
+                class="col-span-3"
+            >
+                {snapshot[0]}
+            </p>
+            <p>
+                {Math.round(snapshot[1].time / selectedSnapshots.reduce((accumulator, _snapshot) => accumulator + _snapshot[1].time, 0) * 100)}%
+            </p>
+        </div>
+    {/each}
 {/if}

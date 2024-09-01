@@ -1,4 +1,4 @@
-<script>
+<script src="https://accounts.google.com/gsi/client">
     import Highlight from "@highlight-ai/app-runtime";
     import { page } from '$app/stores'
     import { onMount } from "svelte";
@@ -78,4 +78,22 @@
             </a>
         </p>
     </form>
+    <div 
+        class="size-5 bg-white"
+        id="g_id_onload"
+        data-client_id="137652800846-85osr2bs675mhco6q9k6hec584vcrtgu.apps.googleusercontent.com"
+        data-context="signup"
+        data-ux_mode="popup"
+        data-callback="googleLogin"
+        data-auto_prompt="false">
+    </div>
+
+    <div class="g_id_signin"
+        data-type="standard"
+        data-shape="pill"
+        data-theme="outline"
+        data-text="signin_with"
+        data-size="large"
+        data-logo_alignment="left">
+    </div>
 </div>

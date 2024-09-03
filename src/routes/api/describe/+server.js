@@ -63,14 +63,18 @@ export const POST = async ({ request, locals: { supabase, user } }) => {
             occupation = response.data[0].occupation;
         }
 
-        let prompt = `
-            Describe what the user is doing using a screenshot and the name of the window.
-            Keep your answer under 100 words.
+        const prompt = `
+            Describe what the user is doing using a screenshot and the name of the window.  
+            Be specific and don't preface with "The user is".
             In addition, determine if the user is productive or not based on their occupation.
 
+            Window name: ${focusedWindowTitle}
             User occupation: ${occupation}
 
-            Return in JSON format: { "productive": "true", "description": "short description" }
+            Return in JSON format.
+
+            Example response:
+            { "productive": true, "description": "Writing and editing JavaScript code. Working on a function that generates a JSON response based on user input and occupation." }
             `;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
@@ -89,15 +93,11 @@ export const POST = async ({ request, locals: { supabase, user } }) => {
                                 detail: "low"
                             }
                         },
-                        {
-                            type: "text",
-                            text: focusedWindowTitle
-                        },
                     ]
                 },
             ],
             response_format: { type: "json_object" },
-            max_tokens: 200,
+            max_tokens: 300,
         });
         return json(response.choices[0].message.content);
     } catch (error) {

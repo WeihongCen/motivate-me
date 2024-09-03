@@ -1,5 +1,6 @@
 <script>
     import Highlight from "@highlight-ai/app-runtime";
+    import ProductivityCalendar from "$lib/ProductivityCalendar.svelte";
     import ProductivityPie from "$lib/ProductivityPie.svelte";
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
@@ -12,19 +13,17 @@
         PRODUCTIVE_ICON,
         UNPRODUCTIVE_ICON,
         PRODUCTIVE_DESCRIPTION,
-        UNPRODUCTIVE_DESCRIPTION
+        UNPRODUCTIVE_DESCRIPTION,
+        ANALYSIS_DELAY,
+        SNAPSHOT_DELAY
     } from "$lib/const.js";
     
     export let data;
     const { supabase, user } = data;
     let { username, occupation } = data;
 
-    const ANALYSIS_DELAY = 300000;
-    const SNAPSHOT_DELAY = 10000;
-
     let unsubscribeRecording;
     let recordingValue;
-    let productivity = [300, 50, 20];
 
     function findMostFrequentWindowSnapshot(data) {
         const windowTitleCount = {};
@@ -57,43 +56,9 @@
         return { mostFrequentTitle, resultURL };
     }
 
-    async function test() {
-        const analysisTimeKey = Math.floor(Date.now() / ANALYSIS_DELAY - 2) * ANALYSIS_DELAY;
-        let snapshots = [];
-        for (let snapshotTimeKey = analysisTimeKey; 
-             snapshotTimeKey < analysisTimeKey + ANALYSIS_DELAY; 
-             snapshotTimeKey += SNAPSHOT_DELAY) {
-            const snapshot = Highlight.appStorage.get(`snapshots/${snapshotTimeKey}`);
-            if (snapshot) {
-                snapshots.push({
-                    focusedWindowTitle: snapshot.focusedWindowTitle,
-                    startTime: snapshot.startTime,
-                    endTime: snapshot.endTime,
-                    snapshotTimeKey: snapshotTimeKey
-                });
-            }
-        }
-
-        if (snapshots.length > 0) {
-            const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots);
-            const analysis = await fetch(`/api/describe`, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    focusedWindowTitle: mostFrequentTitle,
-                    focusedWindowScreenshot: resultURL
-                }),
-            })
-                .then(res => res.json())
-                .then(res => JSON.parse(res));
-            
-            const analysisStartTime = snapshots[0].startTime;
-            const analysisEndTime = snapshots.at(-1).endTime;
-            Highlight.appStorage.set(`analysis/${analysisTimeKey}`, {
-                ...analysis,
-                startTime: analysisStartTime,
-                endTime: analysisEndTime,
-            });
-            console.log(`analysis: ${analysis.description}`);
+    function test() {
+        for (let i = 0; i < 10; i++) {
+            Highlight.appStorage.set("test", 1);
         }
     }
 
@@ -107,12 +72,11 @@
 
     async function populateTestDataset() {
         await Highlight.appStorage.whenHydrated();
-        Highlight.appStorage.clear();
         let testSnapshots = [];
         let currentTime = Date.now();
         let productivity = 0;
         console.log("begin");
-        for (let i = currentTime - 10*60*1000; i < currentTime; i += 10*1000) {
+        for (let i = currentTime - 40*60*1000; i < currentTime; i += 10*1000) {
             const productive = Math.random() > 0.5;
             productivity += productive ? 1 : -1;
             const timeKey = Math.floor(i / 10000) * 10000;
@@ -167,34 +131,11 @@
 </script>
 
 <div class="flex h-screen bg-black text-white overflow-hidden">
-    <!-- Wrapper for sidebar to maintain layout -->
     <div class="w-64 flex-shrink-0">
-        <!-- Sidebar - Fixed within its original position -->
-        <div class="w-64 h-screen overflow-y-auto bg-black border-r border-gray-800 fixed">
+        <div class="w-64 h-screen overflow-y-auto bg-black border-r border-zinc-800 fixed">
             <div class="p-8">
                 <h1 class="text-2xl font-bold mb-6">Overview</h1>
-                <div class="flex items-center mb-1 text-white">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    <span class="text-sm">{formatDate(Date.now())}</span>
-                </div>
-                
-                <div class="mb-8">
-                    <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
-                        User Info
-                        <button class="text-gray-400 hover:text-white rounded-full p-1">:</button>
-                    </h2>
-                    <div class="space-y-2">
-                        <p class="overflow-hidden text-ellipsis">{user.email}</p>
-                        {#if username}
-                            <p class="overflow-hidden text-ellipsis text-gray-400">{username}</p>
-                        {/if}
-                        {#if occupation}
-                            <p class="overflow-hidden text-ellipsis text-gray-400">{occupation}</p>
-                        {/if}
-                    </div>
-                </div>
+                <ProductivityCalendar />
                 
                 <div>
                     <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
@@ -202,7 +143,7 @@
                         <button class="text-gray-400 hover:text-white rounded-full p-1">:</button>
                     </h2>
                     <div class="w-48 h-48 mx-auto">
-                        <ProductivityPie statistics={productivity} />
+                        <ProductivityPie />
                     </div>
                 </div>
             </div>
@@ -212,11 +153,6 @@
     <!-- Main Content -->
     <div class="flex-1 overflow-y-auto">
         <div class="p-8">
-            <!-- User display name in the header or profile dropdown -->
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold">Welcome, {userDisplayName}!</h2>
-            </div>
-
             <div class="mb-8">
                 <div class="flex justify-between items-center">
                     <button 
@@ -248,7 +184,7 @@
                 </div>
             </div>
 
-            <div class="mb-8 grid grid-cols-2 gap-4">
+            <!-- <div class="mb-8 grid grid-cols-2 gap-4">
                 <div class="bg-gray-800 p-4 rounded-lg">
                     <p class="text-sm text-gray-400 mb-2">Average Productive Time</p>
                     <div class="flex justify-between items-center">
@@ -263,16 +199,9 @@
                         <span class="text-red-400 text-sm">↓ 13.4%</span>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
-            <div>
-                <h2 class="text-2xl font-bold mb-4 flex justify-between items-center">
-                    Past Hour Activity
-                </h2>
-                <div class="bg-gray-800 p-4 rounded-lg">
-                    <TimelineChart />
-                </div>
-            </div>
+            <TimelineChart />
         </div>
     </div>
 </div>

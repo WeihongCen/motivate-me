@@ -5,13 +5,14 @@
     import { onMount } from 'svelte'
     import { goto } from '$app/navigation';
     import { recording } from '$lib/store.js';
+    import {
+        ANALYSIS_DELAY,
+        SNAPSHOT_DELAY
+    } from '$lib/const.js';
 
     export let data
 
     $: ({ supabase, session, username, user, avatar_url } = data)
-
-    const ANALYSIS_DELAY = 300000;
-    const SNAPSHOT_DELAY = 10000;
 
     let canvas; // Used to rescale image in imageToDataURL
     let ctx;
@@ -37,11 +38,17 @@
     async function startRecording() {
         if (Highlight.isRunningInHighlight()) {
             try {
+                const permissions = await Highlight.permissions.requestScreenshotPermission();
                 await Highlight.appStorage.whenHydrated();
-                if (await Highlight.permissions.requestScreenshotPermission()) {
+                if (permissions) {
                     snapshotTimestamp = Date.now();
                     snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
-                    analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
+                    setTimeout(() => {
+                        analyzeSnapshots();
+                        analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
+                    }, ANALYSIS_DELAY - (Date.now() % ANALYSIS_DELAY));
+                } else {
+                    recording.set(false);
                 }
             } catch (error) {
                 console.log(error.message)
@@ -197,9 +204,9 @@
 </script>
 
 <div class="min-h-screen text-white font-sans bg-black relative">
-    <nav class="fixed top-0 left-0 right-0 flex justify-between items-center px-8 py-4 bg-opacity-80 backdrop-filter backdrop-blur-lg z-50 border-b border-gray-800">
+    <nav class="fixed top-0 left-0 right-0 flex justify-between items-center px-8 py-2 bg-opacity-80 backdrop-filter backdrop-blur-lg z-50 border-b border-zinc-800">
         <a href="/dashboard" class="flex items-center space-x-4">
-            <img src="/favicon.png" alt="Logo" class="h-8 w-8">
+            <img src="/favicon.png" alt="Logo" class="size-6">
             <span class="text-xl font-semibold">Dashboard</span>
         </a>
         <div class="flex items-center space-x-6">
@@ -213,8 +220,8 @@
                     {#if avatar_url}
                         <img src={avatar_url} alt="Profile" class="h-10 w-10 rounded-full border-2 border-gray-600" />
                     {:else}
-                        <div class="h-10 w-10 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center">
-                            <svg class="h-7 w-7 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <div class="size-6 rounded-full bg-gray-700 border-gray-600 flex items-center justify-center">
+                            <svg class="size-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
                             </svg>
                         </div>

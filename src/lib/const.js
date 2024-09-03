@@ -5,3 +5,8 @@ export const UNPRODUCTIVE_DESCRIPTION = "The user is not productive";
 
 export const GREEN = "#86efac";
 export const RED = "#fca5a5";
+export const GREEN_SECONDARY = "#a6ccc0";
+export const RED_SECONDARY = "#e8b3b3";
+
+export const ANALYSIS_DELAY = 300000;
+export const SNAPSHOT_DELAY = 10000;

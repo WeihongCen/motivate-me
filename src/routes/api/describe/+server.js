@@ -18,42 +18,6 @@ function getBase64Data(base64Url) {
     return { mimeType, imageData };
 }
 
-function findMostFrequentWindowSnapshot(data) {
-    const windowTitleCount = {};
-    const latestURL = {};
-
-    // Iterate through the data to count frequencies and store the latest URL
-    data.forEach(item => {
-        const { 
-            focusedWindowTitle,
-            base64URL,
-        } = item;
-
-        // Update the count for each title
-        if (windowTitleCount[focusedWindowTitle]) {
-            windowTitleCount[focusedWindowTitle]++;
-        } else {
-            windowTitleCount[focusedWindowTitle] = 1;
-        }
-
-        // Update the latest URL for the current title
-        latestURL[focusedWindowTitle] = base64URL;
-    });
-    let mostFrequentTitle = null;
-    let maxCount = 0;
-    for (const title in windowTitleCount) {
-        if (windowTitleCount[title] > maxCount) {
-            maxCount = windowTitleCount[title];
-            mostFrequentTitle = title;
-        }
-    }
-
-    // Get the latest URL for the most frequent title
-    const resultURL = latestURL[mostFrequentTitle];
-
-    return { mostFrequentTitle, resultURL };
-}
-
 async function anthropicModel(prompt, imageURL, mostFrequentTitle) {
     const { mimeType, imageData } = getBase64Data(imageURL);
     const res = await anthropic.messages.create({
@@ -87,10 +51,18 @@ async function anthropicModel(prompt, imageURL, mostFrequentTitle) {
     return json(JSON.parse(res.content[0].text));
 }
 
-export const POST = async ({ request }) => {
+export const POST = async ({ request, locals: { supabase, user } }) => {
     try {
-        const { snapshots, occupation } = await request.json();
-        const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots);
+        const { focusedWindowTitle, focusedWindowScreenshot } = await request.json();
+        let occupation = "";
+        if (user) {
+            let response = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url, occupation')
+                .eq('id', user.id);
+            occupation = response.data[0].occupation;
+        }
+
         let prompt = `
             Describe what the user is doing using a screenshot and the name of the window.
             Keep your answer under 100 words.
@@ -113,13 +85,13 @@ export const POST = async ({ request }) => {
                         {
                             type: "image_url",
                             image_url: {
-                                url: resultURL,
+                                url: focusedWindowScreenshot,
                                 detail: "low"
                             }
                         },
                         {
                             type: "text",
-                            text: mostFrequentTitle
+                            text: focusedWindowTitle
                         },
                     ]
                 },

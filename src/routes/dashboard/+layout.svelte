@@ -1,14 +1,151 @@
 <script>
+    import Highlight from "@highlight-ai/app-runtime";
     import "../../app.css";
     import { invalidate } from '$app/navigation'
     import { onMount } from 'svelte'
     import { goto } from '$app/navigation';
+    import { recording } from '$lib/store.js';
 
     export let data
 
     $: ({ supabase, session, username, user, avatar_url } = data)
+
+    const ANALYSIS_DELAY = 300000;
+    const SNAPSHOT_DELAY = 10000;
+
+    let canvas; // Used to rescale image in imageToDataURL
+    let ctx;
+    let unsubscribeRecording;
+    let analysisInterval;
+    let snapshotInterval;
+    let snapshotTimestamp;
     
     let isProfileDropdownOpen = false;
+
+    function subscribeRecording() {
+        unsubscribeRecording = recording.subscribe((bRecording) => {
+            if (bRecording) {
+                console.log("recording started.");
+                startRecording();
+            } else {
+                console.log("recording ended.");
+                stopRecording();
+            }
+        });
+    }
+
+    async function startRecording() {
+        if (Highlight.isRunningInHighlight()) {
+            try {
+                await Highlight.appStorage.whenHydrated();
+                if (await Highlight.permissions.requestScreenshotPermission()) {
+                    snapshotTimestamp = Date.now();
+                    snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
+                    analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
+                }
+            } catch (error) {
+                console.log(error.message)
+            }
+        } else {
+            console.log("not in highlight");
+        }
+    }
+
+    function stopRecording() {
+        clearInterval(analysisInterval);
+        clearInterval(snapshotInterval);
+    }
+
+    async function takeSnapshot() {
+        const windows = await Highlight.user.getWindows();
+        const focusedWindowTitle = windows[0].windowTitle;
+        const focusedWindowApp = focusedWindowTitle.split(" - ").at(-1);
+        const focusedWindowIcon = windows[0].appIcon;
+        const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
+        const snapshotMetadata = {
+            focusedWindowTitle: focusedWindowTitle,
+            focusedWindowApp: focusedWindowApp,
+            startTime: snapshotTimestamp,
+            endTime: snapshotTimestamp = Date.now(),
+        };
+        const timeKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) * SNAPSHOT_DELAY;
+        const screenshotKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) % SNAPSHOT_DELAY;
+        Highlight.appStorage.set(`snapshots/${timeKey}`, snapshotMetadata);
+        Highlight.appStorage.set(`appIcons/${focusedWindowApp}`, focusedWindowIcon);
+        Highlight.appStorage.set(`screenshots/${screenshotKey}`, focusedWindowScreenshot);
+        console.log(`snapshot: ${focusedWindowTitle}`);
+    }
+
+    function findMostFrequentWindowSnapshot(data) {
+        const windowTitleCount = {};
+        const latestTimestamp = {};
+
+        data.forEach(item => {
+            const { 
+                focusedWindowTitle,
+                snapshotTimeKey,
+            } = item;
+            if (windowTitleCount[focusedWindowTitle]) {
+                windowTitleCount[focusedWindowTitle]++;
+            } else {
+                windowTitleCount[focusedWindowTitle] = 1;
+            }
+            latestTimestamp[focusedWindowTitle] = snapshotTimeKey;
+        });
+
+        let mostFrequentTitle = null;
+        let maxCount = 0;
+        for (const title in windowTitleCount) {
+            if (windowTitleCount[title] > maxCount) {
+                maxCount = windowTitleCount[title];
+                mostFrequentTitle = title;
+            }
+        }
+        const resultTimestamp = latestTimestamp[mostFrequentTitle];
+        const screenshotKey = Math.floor(resultTimestamp / SNAPSHOT_DELAY) % SNAPSHOT_DELAY;
+        const resultURL = Highlight.appStorage.get(`screenshots/${screenshotKey}`);
+        return { mostFrequentTitle, resultURL };
+    }
+
+    async function analyzeSnapshots() {
+        const analysisTimeKey = Math.floor(Date.now() / ANALYSIS_DELAY - 1) * ANALYSIS_DELAY;
+        let snapshots = [];
+        for (let snapshotTimeKey = analysisTimeKey; 
+             snapshotTimeKey < analysisTimeKey + ANALYSIS_DELAY; 
+             snapshotTimeKey += SNAPSHOT_DELAY) {
+            const snapshot = Highlight.appStorage.get(`snapshots/${snapshotTimeKey}`);
+            if (snapshot) {
+                snapshots.push({
+                    focusedWindowTitle: snapshot.focusedWindowTitle,
+                    startTime: snapshot.startTime,
+                    endTime: snapshot.endTime,
+                    snapshotTimeKey: snapshotTimeKey
+                });
+            }
+        }
+
+        if (snapshots.length > 0) {
+            const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots);
+            const analysis = await fetch(`/api/describe`, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    focusedWindowTitle: mostFrequentTitle,
+                    focusedWindowScreenshot: resultURL
+                }),
+            })
+                .then(res => res.json())
+                .then(res => JSON.parse(res));
+            
+            const analysisStartTime = snapshots[0].startTime;
+            const analysisEndTime = snapshots.at(-1).endTime;
+            Highlight.appStorage.set(`analysis/${analysisTimeKey}`, {
+                ...analysis,
+                startTime: analysisStartTime,
+                endTime: analysisEndTime,
+            });
+            console.log(`analysis: ${analysis.description}`);
+        }
+    }
 
     function toggleProfileDropdown(event) {
         event.stopPropagation();
@@ -42,10 +179,17 @@
     }
 
     onMount(() => {
+        canvas = document.createElement('canvas');
+        ctx = canvas.getContext('2d');
+        if (Highlight.isRunningInHighlight()) {
+            subscribeRecording()
+        }
+
         document.addEventListener('click', handleClickOutside);
         document.addEventListener('keydown', handleKeydown);
 
         return () => {
+            unsubscribeRecording();
             document.removeEventListener('click', handleClickOutside);
             document.removeEventListener('keydown', handleKeydown);
         };
@@ -54,10 +198,10 @@
 
 <div class="min-h-screen text-white font-sans bg-black relative">
     <nav class="fixed top-0 left-0 right-0 flex justify-between items-center px-8 py-4 bg-opacity-80 backdrop-filter backdrop-blur-lg z-50 border-b border-gray-800">
-        <div class="flex items-center space-x-4">
+        <a href="/dashboard" class="flex items-center space-x-4">
             <img src="/favicon.png" alt="Logo" class="h-8 w-8">
             <span class="text-xl font-semibold">Dashboard</span>
-        </div>
+        </a>
         <div class="flex items-center space-x-6">
             <div class="relative profile-dropdown">
                 <button 
@@ -118,26 +262,3 @@
         <slot />
     </div>
 </div>
-
-<style lang="postcss">
-    :global(html) {
-        background-color: #000000;
-    }
-    :global(h1) {
-        color: #bbbbbb;
-        font-weight: bold;
-        font-size: 2.25rem;
-        line-height: 2.5rem;
-    }
-    :global(h2) {
-        color: #bbbbbb;
-        font-weight: bold;
-        font-size: 1.5rem;
-    }
-    :global(p) {
-        color: #888888;
-    }
-    :global(button) {
-        color: white;
-    }
-</style>

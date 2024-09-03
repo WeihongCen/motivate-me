@@ -1,7 +1,7 @@
 <script>
     import Highlight from "@highlight-ai/app-runtime";
     import ProductivityPie from "$lib/ProductivityPie.svelte";
-    import TestTimelineChart from "$lib/TestTimelineChart.svelte";
+    import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
     import { 
         recording 
@@ -19,24 +19,82 @@
     const { supabase, user } = data;
     let { username, occupation } = data;
 
+    const ANALYSIS_DELAY = 300000;
+    const SNAPSHOT_DELAY = 10000;
+
     let unsubscribeRecording;
     let recordingValue;
     let productivity = [300, 50, 20];
-    let hourlyActivity = {
-        curTime: Date.now(),
-        datasets: [],
-    };
 
-    let selectedDateRange = 'Jan 08 - Aug 08';
+    function findMostFrequentWindowSnapshot(data) {
+        const windowTitleCount = {};
+        const latestTimestamp = {};
 
-    function getDate(timestamp) {
-        const today = new Date(timestamp);
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
+        data.forEach(item => {
+            const { 
+                focusedWindowTitle,
+                snapshotTimeKey,
+            } = item;
+            if (windowTitleCount[focusedWindowTitle]) {
+                windowTitleCount[focusedWindowTitle]++;
+            } else {
+                windowTitleCount[focusedWindowTitle] = 1;
+            }
+            latestTimestamp[focusedWindowTitle] = snapshotTimeKey;
+        });
 
-        const formattedDate = `${year}-${month}-${day}`;
-        return formattedDate;
+        let mostFrequentTitle = null;
+        let maxCount = 0;
+        for (const title in windowTitleCount) {
+            if (windowTitleCount[title] > maxCount) {
+                maxCount = windowTitleCount[title];
+                mostFrequentTitle = title;
+            }
+        }
+        const resultTimestamp = latestTimestamp[mostFrequentTitle];
+        const screenshotKey = Math.floor(resultTimestamp / SNAPSHOT_DELAY) % SNAPSHOT_DELAY;
+        const resultURL = Highlight.appStorage.get(`screenshots/${screenshotKey}`);
+        return { mostFrequentTitle, resultURL };
+    }
+
+    async function test() {
+        const analysisTimeKey = Math.floor(Date.now() / ANALYSIS_DELAY - 2) * ANALYSIS_DELAY;
+        let snapshots = [];
+        for (let snapshotTimeKey = analysisTimeKey; 
+             snapshotTimeKey < analysisTimeKey + ANALYSIS_DELAY; 
+             snapshotTimeKey += SNAPSHOT_DELAY) {
+            const snapshot = Highlight.appStorage.get(`snapshots/${snapshotTimeKey}`);
+            if (snapshot) {
+                snapshots.push({
+                    focusedWindowTitle: snapshot.focusedWindowTitle,
+                    startTime: snapshot.startTime,
+                    endTime: snapshot.endTime,
+                    snapshotTimeKey: snapshotTimeKey
+                });
+            }
+        }
+
+        if (snapshots.length > 0) {
+            const { mostFrequentTitle, resultURL } = findMostFrequentWindowSnapshot(snapshots);
+            const analysis = await fetch(`/api/describe`, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    focusedWindowTitle: mostFrequentTitle,
+                    focusedWindowScreenshot: resultURL
+                }),
+            })
+                .then(res => res.json())
+                .then(res => JSON.parse(res));
+            
+            const analysisStartTime = snapshots[0].startTime;
+            const analysisEndTime = snapshots.at(-1).endTime;
+            Highlight.appStorage.set(`analysis/${analysisTimeKey}`, {
+                ...analysis,
+                startTime: analysisStartTime,
+                endTime: analysisEndTime,
+            });
+            console.log(`analysis: ${analysis.description}`);
+        }
     }
 
     function formatDate(timestamp) {
@@ -47,67 +105,40 @@
         return `${month}-${day}-${year}`;
     }
 
-    async function populateHourlyActivity() {
-        let curTime = 1724968905828;
-        let newHourlyActivity = {
-            curTime: curTime,
-            datasets: [],
-        };
-        for (let i = curTime; i > curTime - 60*60*1000; i -= 30000) {
-            const analysisTimeKey = Math.round(i / 30000) * 30000;
-            const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
-            if (analysis) {
-                const productivityColor = analysis.productive ? GREEN : RED;
-                const hoverColor = analysis.productive ? "#96eeb6" : "#ffb7b7";
-                newHourlyActivity.datasets.push({
-                    label: analysis.description,
-                    data: [
-                        {
-                            x: [new Date(analysis.analysisStartTime), new Date(analysis.analysisEndTime)],
-                            y: "Status",
-                        },
-                    ],
-                    backgroundColor: productivityColor,
-                    hoverBackgroundColor: hoverColor,
-                });
-            }
-        }
-        hourlyActivity = newHourlyActivity;
-    }
-
     async function populateTestDataset() {
         await Highlight.appStorage.whenHydrated();
         Highlight.appStorage.clear();
         let testSnapshots = [];
         let currentTime = Date.now();
         let productivity = 0;
-        for (let i = currentTime - 60*60*1000; i < currentTime;) {
+        console.log("begin");
+        for (let i = currentTime - 10*60*1000; i < currentTime; i += 10*1000) {
             const productive = Math.random() > 0.5;
-            productivity += productive;
+            productivity += productive ? 1 : -1;
+            const timeKey = Math.floor(i / 10000) * 10000;
             const snapshotMetadata = {
                 focusedWindowTitle: "app header - " + productive ? "productive app" : "unproductive app",
                 focusedWindowApp: productive ? "productive app" : "unproductive app",
-                startTime: i,
-                endTime: i += 10*1000,
+                startTime: timeKey,
+                endTime: timeKey + 10*1000,
             }
-            const timeKey = Math.round(snapshotMetadata.startTime / 10000) * 10000;
             Highlight.appStorage.set(`snapshots/${timeKey}`, snapshotMetadata);
             Highlight.appStorage.set(`appIcons/${snapshotMetadata.focusedWindowApp}`, productive ? PRODUCTIVE_ICON : UNPRODUCTIVE_ICON);
             testSnapshots = [...testSnapshots, snapshotMetadata];
             
-            if (testSnapshots.length >= 30) {
-                const analysisTimeKey = Math.round(testSnapshots[0].startTime / 300000) * 300000;
-                const generalProductivity = productivity >= 15;
+            if ((timeKey + 10000) % 300000 === 0 && testSnapshots.length > 0) {
+                const analysisTimeKey = Math.floor(testSnapshots[0].startTime / 300000) * 300000;
                 Highlight.appStorage.set(`analysis/${analysisTimeKey}`, {
-                    productive: generalProductivity,
-                    description: generalProductivity ? PRODUCTIVE_DESCRIPTION : UNPRODUCTIVE_DESCRIPTION,
-                    analysisStartTime: analysisTimeKey,
-                    analysisEndTime: analysisTimeKey + 300000,
+                    productive: productivity > 0,
+                    description: productivity > 0 ? PRODUCTIVE_DESCRIPTION : UNPRODUCTIVE_DESCRIPTION,
+                    startTime: analysisTimeKey,
+                    endTime: timeKey + 10*1000,
                 });
                 productivity = 0;
                 testSnapshots = []
             }
         }
+        console.log("complete");
     } 
 
     let userDisplayName = username || user.email;
@@ -133,7 +164,6 @@
         };
     });
 
-    $: hourlyActivity;
 </script>
 
 <div class="flex h-screen bg-black text-white overflow-hidden">
@@ -149,7 +179,6 @@
                     </svg>
                     <span class="text-sm">{formatDate(Date.now())}</span>
                 </div>
-                <p class="mb-8 text-white">You are <span class={`text-[var(--color-productive)]`}>productive</span></p>
                 
                 <div class="mb-8">
                     <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
@@ -212,10 +241,14 @@
                     on:click={populateTestDataset}>
                         Generate test dataset
                     </button>
+                    <button class="bg-gray-700 px-4 py-2 rounded-full hover:bg-gray-600 transition-colors duration-300"
+                    on:click={test}>
+                        test
+                    </button>
                 </div>
             </div>
 
-            <div class="mb-8 grid grid-cols-3 gap-4">
+            <div class="mb-8 grid grid-cols-2 gap-4">
                 <div class="bg-gray-800 p-4 rounded-lg">
                     <p class="text-sm text-gray-400 mb-2">Average Productive Time</p>
                     <div class="flex justify-between items-center">
@@ -230,30 +263,14 @@
                         <span class="text-red-400 text-sm">↓ 13.4%</span>
                     </div>
                 </div>
-                <div class="bg-gray-800 p-4 rounded-lg">
-                    <p class="text-sm text-gray-400 mb-2">Active Members</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-2xl font-bold">4,555</span>
-                        <span class="text-yellow-400 text-sm">↗ 19.8%</span>
-                    </div>
-                </div>
             </div>
 
             <div>
                 <h2 class="text-2xl font-bold mb-4 flex justify-between items-center">
                     Past Hour Activity
-                    <button 
-                        class="p-2 bg-orange-400 hover:bg-orange-500 rounded-full transition-colors duration-300"
-                        on:click={populateHourlyActivity}
-                        aria-label="Refresh Past Hour Activity"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </button>
                 </h2>
-                <div class="bg-gray-800 p-4 rounded-lg h-[100px]">
-                    <TestTimelineChart statistics={hourlyActivity} />
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <TimelineChart />
                 </div>
             </div>
         </div>

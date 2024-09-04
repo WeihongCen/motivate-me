@@ -18,7 +18,7 @@
     let selectedTime;
     let selectedAnalysis;
     let appDetails = {};
-    let selectedSnapshots = [];
+    let selectedApps = [];
 
     onMount(async () => {
         await createChart();
@@ -98,10 +98,12 @@
                                         icon: Highlight.appStorage.get(`appIcons/${snapshot.focusedWindowApp}`)
                                     }
                                 }
+                                if (appDetails[snapshot.focusedWindowTitle]) {
+                                }
                             }
                         }
-                        selectedSnapshots = Object.entries(appDetails);
-                        selectedSnapshots.sort((a, b) => b[1].time - a[1].time);
+                        selectedApps = Object.entries(appDetails);
+                        selectedApps.sort((a, b) => b[1].time - a[1].time);
                     } else {
                         selectedTime = null;
                     }
@@ -177,7 +179,7 @@
             <div class="flex flex-col gap-5">
                 <p>{selectedAnalysis.description}</p>
                 <div class="flex flex-col gap-5">
-                    {#each selectedSnapshots as snapshot}
+                    {#each selectedApps as snapshot}
                         <div
                             class="grid grid-cols-5 gap-4"
                         >
@@ -190,7 +192,7 @@
                                 {snapshot[0]}
                             </p>
                             <p class="text-right">
-                                {Math.round(snapshot[1].time / selectedSnapshots.reduce((accumulator, _snapshot) => accumulator + _snapshot[1].time, 0) * 100)}%
+                                {Math.round(snapshot[1].time / selectedApps.reduce((accumulator, app) => accumulator + app[1].time, 0) * 100)}%
                             </p>
                         </div>
                     {/each}

@@ -18,10 +18,13 @@
         return formattedDate;
     }
 
-    async function generateMonthCalendar(year, month) {
+    async function generateMonthCalendar() {
         await Highlight.appStorage.whenHydrated();
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
         const daysInMonth = new Date(year, month, 0).getDate();
-        const firstDay = new Date(year, month - 1, 1).getDay();
+        const firstDay = new Date(year, month-1, 1).getDay();
         const calendar = new Array(firstDay).fill({
             day: 0,
             productivity: -1,
@@ -63,12 +66,12 @@
     }
 
     onMount(async () => {
-        calendar = await generateMonthCalendar(2024, 9);
+        calendar = await generateMonthCalendar();
     });
     
 </script>
 
-<p class="mb-2">{formatDate()}</p>
+<!-- <p class="mb-2">{formatDate()}</p> -->
 <div class="grid grid-cols-7 w-fit gap-1">
     {#each ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as day}
         <p class="w-5 text-xs text-center">{day}</p>
@@ -88,7 +91,7 @@
                     style={`--tw-bg-opacity: ${(0.5-productivity)*2}`}>
                     </div>
                 {:else}
-                    <div class={`absolute top-0 size-full bg-zinc-900 rounded`}>
+                    <div class={`absolute top-0 size-full bg-zinc-800 rounded`}>
                     </div>
                 {/if}
             </div>

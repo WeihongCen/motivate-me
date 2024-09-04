@@ -57,17 +57,9 @@
     }
 
     function test() {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 3; i++) {
             Highlight.appStorage.set("test", 1);
         }
-    }
-
-    function formatDate(timestamp) {
-        const date = new Date(timestamp);
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${month}-${day}-${year}`;
     }
 
     async function populateTestDataset() {
@@ -158,25 +150,24 @@
                     <button 
                         class={`
                             flex items-center space-x-2 px-4 py-2 rounded-full
-                            transition-colors duration-300 
-                            bg-gray-800 border
-                            ${recordingValue ? 'border-red-500 text-red-500' : 'border-gray-600 text-gray-400'}
-                            hover:bg-gray-700
+                            transition-colors duration-300 border
+                            ${recordingValue ? 'border-red-500 text-red-500' : 'border-zinc-800 text-zinc-400'}
+                            hover:bg-zinc-800
                         `}
                         on:click={() => recording.set(!recordingValue)}
                     >
-                        <div class="relative w-3 h-3 flex items-center justify-center">
+                        <div class="relative size-3 flex items-center justify-center">
                             <div class={`
-                                w-3 h-3
-                                ${recordingValue ? 'bg-red-500' : 'bg-gray-400 rounded-full'}
+                                size-3
+                                ${recordingValue ? 'bg-red-500' : 'bg-zinc-400 rounded-full'}
                             `}></div>
                         </div>
                         <span class="w-12">{recordingValue ? 'Stop' : 'Record'}</span>
                     </button>
-                    <button class="bg-gray-700 px-4 py-2 rounded-full hover:bg-gray-600 transition-colors duration-300"
+                    <!-- <button class="bg-gray-700 px-4 py-2 rounded-full hover:bg-gray-600 transition-colors duration-300"
                     on:click={populateTestDataset}>
                         Generate test dataset
-                    </button>
+                    </button> -->
                     <button class="bg-gray-700 px-4 py-2 rounded-full hover:bg-gray-600 transition-colors duration-300"
                     on:click={test}>
                         test

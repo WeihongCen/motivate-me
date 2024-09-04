@@ -69,10 +69,7 @@
         background-color: #000000;
     }
     :global(h1) {
-        color: #bbbbbb;
-        font-weight: bold;
-        font-size: 2.25rem;
-        line-height: 2.5rem;
+        color: white;
     }
     :global(h2) {
         color: #bbbbbb;
@@ -80,9 +77,6 @@
         font-size: 1.5rem;
     }
     :global(p) {
-        color: #888888;
-    }
-    :global(button) {
-        color: white;
+        color: #bbbbbb;
     }
 </style>

@@ -68,7 +68,7 @@
     
 </script>
 
-<p class="text-white mb-2">{formatDate()}</p>
+<p class="mb-2">{formatDate()}</p>
 <div class="grid grid-cols-7 w-fit gap-1">
     {#each ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as day}
         <p class="w-5 text-xs text-center">{day}</p>
@@ -79,10 +79,15 @@
             </div>
         {:else}
             {#if productivity !== -1}
-                <div class={`size-5 bg-red-500 rounded`}>
-                    <div class={`size-5 bg-emerald-500 rounded ${day === new Date().getDate() ? "border" : ""}`}
-                    style={`--tw-bg-opacity: ${productivity}`}
-                    >
+                <div class={`relative size-5 bg-neutral-300 rounded`}
+                style={`
+                    border-width: ${day === new Date().getDate() ? "2px" : "0px"};
+                `}>
+                    <div class={`absolute top-0 size-full bg-emerald-500 rounded`}
+                    style={`--tw-bg-opacity: ${(productivity-0.5)*2}`}>
+                    </div>
+                    <div class={`absolute top-0 size-full bg-red-500 rounded`}
+                    style={`--tw-bg-opacity: ${(0.5-productivity)*2}`}>
                     </div>
                 </div>
             {:else}

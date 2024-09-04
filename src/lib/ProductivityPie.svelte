@@ -9,7 +9,6 @@
         SNAPSHOT_DELAY
     } from "$lib/const.js";
     
-    export let statistics;
     let piechartCanvas;
     let data = [0, 0];
     let productivity = 0;
@@ -20,12 +19,6 @@
     onMount(async () => {
         await createChart();
     });
-
-    $: if (statistics) {
-        (async () => {
-            await updateChart();
-        })();
-    }
 
     function formatTime(milliseconds) {
         const totalMinutes = Math.floor(milliseconds / 60000);

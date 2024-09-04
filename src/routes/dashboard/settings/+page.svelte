@@ -54,9 +54,9 @@
             <h1 class="text-3xl font-bold text-center text-white mb-2">Profile Settings</h1>
 
             <div class="flex flex-col gap-2">
-                <label for="email-input" class="text-sm font-medium text-gray-400">Email address</label>
+                <label for="email-input" class="text-sm font-medium text-zinc-400">Email address</label>
                 <input 
-                    class="w-full px-4 py-3 bg-white bg-opacity-10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition duration-300"
+                    class="w-full px-4 py-3 rounded-lg text-zinc-400 placeholder-zinc-400 cursor-not-allowed"
                     type="email"
                     name="email" 
                     id="email-input" 
@@ -67,9 +67,9 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label for="username-input" class="text-sm font-medium text-gray-400">Username</label>
+                <label for="username-input" class="text-sm font-medium text-zinc-400">Username</label>
                 <input 
-                    class="w-full px-4 py-3 bg-white bg-opacity-10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition duration-300"
+                    class="w-full px-4 py-3 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition duration-300"
                     type="text"
                     name="username" 
                     id="username-input" 
@@ -80,9 +80,9 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label for="occupation-input" class="text-sm font-medium text-gray-400">Occupation</label>
+                <label for="occupation-input" class="text-sm font-medium text-zinc-400">Occupation</label>
                 <input 
-                    class="w-full px-4 py-3 bg-white bg-opacity-10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition duration-300"
+                    class="w-full px-4 py-3 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition duration-300"
                     type="text"
                     name="occupation" 
                     id="occupation-input" 

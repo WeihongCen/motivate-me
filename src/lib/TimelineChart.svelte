@@ -13,6 +13,7 @@
     } from "$lib/const.js";
 
     export let statistics;
+    const range = 60*60*1000;
     let timelineChart;
     let chart;
     let selectedTime;
@@ -54,7 +55,7 @@
                             tickWidth: 2,
                             lineWidth: 0,
                         },
-                        min: new Date(Date.now() - 60 * 60 * 1000),
+                        min: new Date(Date.now() - range),
                         max: new Date(Date.now()),
                     },
                     y: {
@@ -124,11 +125,10 @@
     async function updateChart() {
         if (chart) {
             await Highlight.appStorage.whenHydrated();
-            // let curTime = 1724968905828;
             let curTime = Date.now();
             curTime = Math.round(curTime / ANALYSIS_DELAY) * ANALYSIS_DELAY;
             let datasets = [];
-            for (let i = curTime; i >= curTime - 60*60*1000; i -= ANALYSIS_DELAY) {
+            for (let i = curTime; i >= curTime - range; i -= ANALYSIS_DELAY) {
                 const analysisTimeKey = Math.round(i / ANALYSIS_DELAY) * ANALYSIS_DELAY;
                 const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
                 if (analysis) {
@@ -149,7 +149,7 @@
             }
 
             chart.data.datasets = datasets;
-            chart.options.scales.x.min = new Date(curTime - 60*60*1000);
+            chart.options.scales.x.min = new Date(curTime - range);
             chart.options.scales.x.max = new Date(curTime);
             chart.update();
         }

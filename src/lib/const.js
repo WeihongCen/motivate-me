@@ -10,3 +10,4 @@ export const RED_SECONDARY = "#e8b3b3";
 
 export const ANALYSIS_DELAY = 300000;
 export const SNAPSHOT_DELAY = 10000;
+export const SNAPSHOT_STORAGE_LIMIT = 30;

@@ -5,7 +5,8 @@
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
     import { 
-        recording 
+        recording,
+        recordingTimer,
     } from '$lib/store.js';
     import {
         GREEN,
@@ -23,7 +24,9 @@
     let { username, occupation } = data;
 
     let unsubscribeRecording;
-    let recordingValue;
+    let unsubscribeTimer;
+    let bRecording;
+    let timerDisplay;
 
     function findMostFrequentWindowSnapshot(data) {
         const windowTitleCount = {};
@@ -57,9 +60,10 @@
     }
 
     function test() {
-        for (let i = 0; i < 3; i++) {
+        setTimeout(()=>{
+            console.log("test");
             Highlight.appStorage.set("test", 1);
-        }
+        }, 1000);
     }
 
     async function populateTestDataset() {
@@ -97,11 +101,26 @@
         console.log("complete");
     } 
 
+    function formatTimer(ms) {
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        const formattedHours = hours > 0 ? String(hours).padStart(2, '0') + ':' : '';
+        const formattedMinutes = String(minutes).padStart(2, '0');
+        const formattedSeconds = String(seconds).padStart(2, '0');
+        return formattedHours + formattedMinutes + ':' + formattedSeconds;
+    }
+
     let userDisplayName = username || user.email;
 
     onMount(async () => {
         unsubscribeRecording = recording.subscribe((value) => {
-            recordingValue = value;
+            bRecording = value;
+        });
+        unsubscribeTimer = recordingTimer.subscribe((value) => {
+            if (bRecording) {
+                timerDisplay = formatTimer(value);
+            }
         });
 
         // Fetch user data if username or occupation is not available
@@ -117,6 +136,7 @@
 
         return () => {
             unsubscribeRecording();
+            unsubscribeTimer();
         };
     });
 
@@ -124,21 +144,15 @@
 
 <div class="flex h-screen bg-black text-white overflow-hidden">
     <div class="w-64 flex-shrink-0">
-        <div class="w-64 h-screen overflow-y-auto bg-black border-r border-zinc-800 fixed">
-            <div class="p-8">
-                <h1 class="text-2xl font-bold mb-6">Overview</h1>
-                <ProductivityCalendar />
-                
-                <div>
-                    <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
-                        Analytics
-                        <button class="text-gray-400 hover:text-white rounded-full p-1">:</button>
-                    </h2>
-                    <div class="w-48 h-48 mx-auto">
-                        <ProductivityPie />
-                    </div>
-                </div>
-            </div>
+        <div class="w-64 h-screen p-8 overflow-y-auto bg-black border-r border-zinc-800 fixed">
+            <h1 class="text-2xl font-bold mb-6">Overview</h1>
+
+            <ProductivityCalendar />
+
+            <button class="bg-red-700 px-4 py-2 rounded-full hover:bg-red-600 transition-colors duration-300"
+            on:click={test}>
+                test
+            </button>
         </div>
     </div>
 
@@ -146,32 +160,31 @@
     <div class="flex-1 overflow-y-auto">
         <div class="p-8">
             <div class="mb-8">
-                <div class="flex justify-between items-center">
+                <div class="flex items-center gap-5">
                     <button 
                         class={`
                             flex items-center space-x-2 px-4 py-2 rounded-full
-                            transition-colors duration-300 border
-                            ${recordingValue ? 'border-red-500 text-red-500' : 'border-zinc-800 text-zinc-400'}
-                            hover:bg-zinc-800
+                            transition-colors duration-300 border-2
+                            ${bRecording ? 'border-red-500 text-red-500' : 'border-white text-white'}
+                            hover:bg-zinc-700
                         `}
-                        on:click={() => recording.set(!recordingValue)}
+                        on:click={ () => {recording.set(!bRecording)} }
                     >
                         <div class="relative size-3 flex items-center justify-center">
                             <div class={`
-                                size-3
-                                ${recordingValue ? 'bg-red-500' : 'bg-zinc-400 rounded-full'}
+                                size-3 transition-colors duration-300
+                                ${bRecording ? 'bg-red-500' : 'bg-white rounded-full'}
                             `}></div>
                         </div>
-                        <span class="w-12">{recordingValue ? 'Stop' : 'Record'}</span>
+                        <span class="w-12">{bRecording ? 'Stop' : 'Record'}</span>
                     </button>
+                    {#if timerDisplay && bRecording}
+                        <p>{timerDisplay}</p>
+                    {/if}
                     <!-- <button class="bg-gray-700 px-4 py-2 rounded-full hover:bg-gray-600 transition-colors duration-300"
                     on:click={populateTestDataset}>
                         Generate test dataset
                     </button> -->
-                    <button class="bg-gray-700 px-4 py-2 rounded-full hover:bg-gray-600 transition-colors duration-300"
-                    on:click={test}>
-                        test
-                    </button>
                 </div>
             </div>
 

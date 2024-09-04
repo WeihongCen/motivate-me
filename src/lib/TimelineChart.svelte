@@ -12,8 +12,7 @@
         SNAPSHOT_DELAY
     } from "$lib/const.js";
 
-    export let statistics;
-    const range = 60*60*1000;
+    let range = 3600000;
     let timelineChart;
     let chart;
     let selectedTime;
@@ -25,7 +24,7 @@
         await createChart();
     });
 
-    $: if (statistics) {
+    $: if (range) {
         updateChart();
     }
 
@@ -80,7 +79,7 @@
                         e.native.target.style.cursor = "default";
                     }
                 },
-                animation: true,
+                animation: false,
                 onClick: async (e, element) => {
                     if (element.length) {
                         await Highlight.appStorage.whenHydrated();
@@ -125,10 +124,10 @@
     async function updateChart() {
         if (chart) {
             await Highlight.appStorage.whenHydrated();
-            let curTime = Date.now();
-            curTime = Math.round(curTime / ANALYSIS_DELAY) * ANALYSIS_DELAY;
+            const curTime = Date.now();
+            const timeKey = Math.round(curTime / ANALYSIS_DELAY) * ANALYSIS_DELAY;
             let datasets = [];
-            for (let i = curTime; i >= curTime - range; i -= ANALYSIS_DELAY) {
+            for (let i = timeKey; i >= timeKey - range; i -= ANALYSIS_DELAY) {
                 const analysisTimeKey = Math.round(i / ANALYSIS_DELAY) * ANALYSIS_DELAY;
                 const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
                 if (analysis) {
@@ -159,17 +158,14 @@
 <div class="flex flex-col gap-5">
     <div class="flex justify-between">
         <h2 class="text-2xl font-bold mb-4 flex justify-between items-center">
-            Past Hour Activity
+            Recent Activity
         </h2>
-        <button 
-            class="size-10 bg-gray-600 hover:bg-gray-500 rounded-full"
-            on:click={updateChart}
-            aria-label="Refresh Past Hour Activity"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" class="p-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-        </button>
+        <select class="px-2 bg-zinc-800 rounded cursor-pointer"
+        bind:value={range}>
+            <option value={3600000}>1 hour</option>
+            <option value={10800000}>3 hours</option>
+            <option value={43200000}>12 hours</option>
+        </select>
     </div>
 
     <div class="bg-zinc-800 p-4 rounded-lg h-[100px]">

@@ -4,10 +4,14 @@
     import { invalidate } from '$app/navigation'
     import { onMount } from 'svelte'
     import { goto } from '$app/navigation';
-    import { recording } from '$lib/store.js';
+    import { 
+        recording,
+        recordingTimer
+     } from '$lib/store.js';
     import {
         ANALYSIS_DELAY,
-        SNAPSHOT_DELAY
+        SNAPSHOT_DELAY,
+        SNAPSHOT_STORAGE_LIMIT
     } from '$lib/const.js';
 
     export let data
@@ -17,8 +21,12 @@
     let canvas; // Used to rescale image in imageToDataURL
     let ctx;
     let unsubscribeRecording;
-    let analysisInterval;
+    let snapshotTimeout;
+    let analysisTimeout;
     let snapshotInterval;
+    let analysisInterval;
+    let timerStartTime;
+    let timerInterval;
     let snapshotTimestamp;
     
     let isProfileDropdownOpen = false;
@@ -38,15 +46,25 @@
     async function startRecording() {
         if (Highlight.isRunningInHighlight()) {
             try {
-                const permissions = await Highlight.permissions.requestScreenshotPermission();
+                const screenshotPermissions = await Highlight.permissions.requestScreenshotPermission();
+                const backgroundPermissions = await Highlight.permissions.requestBackgroundPermission();
                 await Highlight.appStorage.whenHydrated();
-                if (permissions) {
+                if (screenshotPermissions && backgroundPermissions) {
                     snapshotTimestamp = Date.now();
-                    snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
-                    setTimeout(() => {
+                    timerStartTime = Date.now();
+                    snapshotTimeout = setTimeout(() => {
+                        takeSnapshot();
+                        snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_DELAY);
+                    }, SNAPSHOT_DELAY - (Date.now() % SNAPSHOT_DELAY));
+
+                    analysisTimeout = setTimeout(() => {
                         analyzeSnapshots();
                         analysisInterval = setInterval(analyzeSnapshots, ANALYSIS_DELAY);
                     }, ANALYSIS_DELAY - (Date.now() % ANALYSIS_DELAY));
+                    recordingTimer.set(0);
+                    timerInterval = setInterval(() => {
+                        recordingTimer.set(Date.now() - timerStartTime);
+                    }, 1000);
                 } else {
                     recording.set(false);
                 }
@@ -59,6 +77,8 @@
     }
 
     function stopRecording() {
+        clearTimeout(snapshotTimeout);
+        clearTimeout(analysisTimeout);
         clearInterval(analysisInterval);
         clearInterval(snapshotInterval);
     }
@@ -76,9 +96,11 @@
             endTime: snapshotTimestamp = Date.now(),
         };
         const timeKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) * SNAPSHOT_DELAY;
-        const screenshotKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) % SNAPSHOT_DELAY;
+        const screenshotKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) % SNAPSHOT_STORAGE_LIMIT;
         Highlight.appStorage.set(`snapshots/${timeKey}`, snapshotMetadata);
-        Highlight.appStorage.set(`appIcons/${focusedWindowApp}`, focusedWindowIcon);
+        if (Highlight.appStorage.get(`appIcons/${focusedWindowApp}`) !== focusedWindowIcon) {
+            Highlight.appStorage.set(`appIcons/${focusedWindowApp}`, focusedWindowIcon);
+        }
         Highlight.appStorage.set(`screenshots/${screenshotKey}`, focusedWindowScreenshot);
         console.log(`snapshot: ${focusedWindowTitle}`);
     }
@@ -109,7 +131,7 @@
             }
         }
         const resultTimestamp = latestTimestamp[mostFrequentTitle];
-        const screenshotKey = Math.floor(resultTimestamp / SNAPSHOT_DELAY) % SNAPSHOT_DELAY;
+        const screenshotKey = Math.floor(resultTimestamp / SNAPSHOT_DELAY) % SNAPSHOT_STORAGE_LIMIT;
         const resultURL = Highlight.appStorage.get(`screenshots/${screenshotKey}`);
         return { mostFrequentTitle, resultURL };
     }
@@ -265,7 +287,7 @@
             </div>
         </div>
     </nav>
-    <div class="pt-24 px-8 max-w-7xl mx-auto">
+    <div class="pt-10 px-8 max-w-7xl mx-auto">
         <slot />
     </div>
 </div>

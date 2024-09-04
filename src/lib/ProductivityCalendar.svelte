@@ -78,22 +78,20 @@
             <div class={`size-5`}>
             </div>
         {:else}
-            {#if productivity !== -1}
-                <div class={`relative size-5 bg-neutral-300 rounded`}
-                style={`
-                    border-width: ${day === new Date().getDate() ? "2px" : "0px"};
-                `}>
-                    <div class={`absolute top-0 size-full bg-emerald-500 rounded`}
+            <div class={`relative size-5 bg-neutral-300 rounded-md`}
+            style={`border-width: ${day === new Date().getDate() ? "2px" : "0px"}`}>
+                {#if productivity !== -1}
+                    <div class={`absolute top-0 size-full bg-emerald-500 rounded-md`}
                     style={`--tw-bg-opacity: ${(productivity-0.5)*2}`}>
                     </div>
-                    <div class={`absolute top-0 size-full bg-red-500 rounded`}
+                    <div class={`absolute top-0 size-full bg-red-500 rounded-md`}
                     style={`--tw-bg-opacity: ${(0.5-productivity)*2}`}>
                     </div>
-                </div>
-            {:else}
-                <div class={`size-5 bg-zinc-900 rounded`}>
-                </div>
-            {/if}
+                {:else}
+                    <div class={`absolute top-0 size-full bg-zinc-900 rounded`}>
+                    </div>
+                {/if}
+            </div>
         {/if}
     {/each}
 </div>

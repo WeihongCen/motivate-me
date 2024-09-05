@@ -98,6 +98,7 @@ export const POST = async ({ request, locals: { supabase, user } }) => {
             ],
             response_format: { type: "json_object" },
             max_tokens: 300,
+            temperature: 0,
         });
         return json(response.choices[0].message.content);
     } catch (error) {

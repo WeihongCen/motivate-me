@@ -60,10 +60,16 @@
     }
 
     function test() {
-        setTimeout(()=>{
-            console.log("test");
+        // Highlight.appStorage.clear();
+        for (let i = 0; i < 3; i++) {
             Highlight.appStorage.set("test", 1);
-        }, 1000);
+        }
+        // let storage = Highlight.appStorage.all();
+        // Object.keys(storage).forEach(key => {
+        //     if (key.startsWith("screenshot")) {
+        //         console.log(key);
+        //     }
+        // });
     }
 
     async function populateTestDataset() {

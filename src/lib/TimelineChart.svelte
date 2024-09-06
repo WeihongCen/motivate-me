@@ -1,8 +1,14 @@
 <script>
     import Highlight from "@highlight-ai/app-runtime";
-    import { onMount } from "svelte";
+    import { 
+        onMount,
+        onDestroy
+    } from "svelte";
     import Chart from "chart.js/auto";
     import 'chartjs-adapter-luxon';
+    import {
+        graphUpdateListener
+    } from "$lib/store.js"
     import {
         GREEN,
         RED,
@@ -18,15 +24,14 @@
     let selectedTime;
     let selectedAnalysis;
     let appDetails = {};
+    let pageDetails = {};
     let selectedApps = [];
+    let selectedPages = {};
+    let expandedState = {};
 
-    onMount(async () => {
-        await createChart();
-    });
-
-    $: if (range) {
+    const unsubscribeListener = graphUpdateListener.subscribe((value) => {
         updateChart();
-    }
+    });
 
     async function createChart() {
         chart = new Chart(timelineChart, {
@@ -87,6 +92,7 @@
                         const analysisTimeKey = Math.floor(selectedTime / ANALYSIS_DELAY) * ANALYSIS_DELAY;
                         selectedAnalysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
                         appDetails = {};
+                        pageDetails = {};
                         for (let i = analysisTimeKey; i < analysisTimeKey + ANALYSIS_DELAY; i += SNAPSHOT_DELAY) {
                             let snapshot = Highlight.appStorage.get(`snapshots/${i}`);
                             if (snapshot) {
@@ -97,13 +103,30 @@
                                         time: snapshot.endTime - snapshot.startTime,
                                         icon: Highlight.appStorage.get(`appIcons/${snapshot.focusedWindowApp}`)
                                     }
+                                    pageDetails[snapshot.focusedWindowApp] = {};
+                                    expandedState[snapshot.focusedWindowApp] = false;
                                 }
-                                if (appDetails[snapshot.focusedWindowTitle]) {
+                                if (snapshot.focusedWindowTitle) {
+                                    const pageTitle = snapshot.focusedWindowTitle.split(" - ").at(0);
+                                    if (pageTitle) {
+                                        if (pageDetails[snapshot.focusedWindowApp][pageTitle]) {
+                                            pageDetails[snapshot.focusedWindowApp][pageTitle].time += snapshot.endTime - snapshot.startTime;
+                                        } else {
+                                            pageDetails[snapshot.focusedWindowApp][pageTitle] = {
+                                                time: snapshot.endTime - snapshot.startTime
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                         selectedApps = Object.entries(appDetails);
                         selectedApps.sort((a, b) => b[1].time - a[1].time);
+                        selectedApps.forEach(([appName, _]) => {
+                            selectedPages[appName] = Object.entries(pageDetails[appName]);
+                            selectedPages[appName].sort((a, b) => b[1].time - a[1].time);
+                        });
+
                     } else {
                         selectedTime = null;
                     }
@@ -155,9 +178,50 @@
             chart.update();
         }
     }
+
+    function convertTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        let hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+        return `${hours}:${minutesStr} ${ampm}`;
+    }
+
+    function formatTime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        let result = '';
+        if (hours > 0) {
+            result += hours + 'h ';
+        }
+        if (minutes > 0) {
+            result += minutes + 'm ';
+        }
+        if (seconds > 0 || result === '') {
+            result += seconds + 's';
+        }
+        return result.trim();
+    }
+
+    onMount(async () => {
+        await createChart();
+    });
+
+    onDestroy(() => {
+        unsubscribeListener();
+    });
+
+    $: if (range) {
+        updateChart();
+    }
 </script>
 
-<div class="flex flex-col gap-5">
+<div class="flex flex-col gap-5 min-w-[500px]">
     <div class="flex justify-between">
         <h2 class="text-2xl font-bold mb-4 flex justify-between items-center">
             Recent Activity
@@ -176,25 +240,51 @@
     
     <div class="bg-zinc-800 p-4 rounded-lg">
         {#if selectedAnalysis}
-            <div class="flex flex-col gap-5">
-                <p>{selectedAnalysis.description}</p>
-                <div class="flex flex-col gap-5">
-                    {#each selectedApps as snapshot}
-                        <div
-                            class="grid grid-cols-5 gap-4"
-                        >
-                            <img 
-                                class="size-6"
-                                src={snapshot[1].icon} alt="app icon">
-                            <p
-                                class="col-span-3"
-                            >
-                                {snapshot[0]}
-                            </p>
-                            <p class="text-right">
-                                {Math.round(snapshot[1].time / selectedApps.reduce((accumulator, app) => accumulator + app[1].time, 0) * 100)}%
-                            </p>
-                        </div>
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-5">
+                    <div class={`size-4 rounded-full`}
+                    style={`background-color: ${selectedAnalysis.productive ? GREEN : RED}`}>
+                    </div>
+                    <p class="text-white">{convertTimestamp(selectedAnalysis.startTime)}</p>
+                </div>
+                <p class="">{selectedAnalysis.description}</p>
+                <div class="flex flex-col mt-5 gap-2">
+                    {#each selectedApps as [appName, appMetadata]}
+                        <button class="flex flex-col gap-2 bg-zinc-900 rounded-lg p-4"
+                        on:click={() => {expandedState[appName] = !expandedState[appName]}}>
+                            <div class="w-full grid grid-cols-6 gap-5">
+                                <img class="size-6"
+                                src={appMetadata.icon} alt="app icon">
+                                <p class="col-span-4 font-bold truncate text-left">
+                                    {appName}
+                                </p>
+                                {#if expandedState[appName]}
+                                    <p class="text-right">
+                                        {formatTime(appMetadata.time)}
+                                    </p>
+                                {:else}
+                                    <p class="text-right">
+                                        {Math.round(appMetadata.time / selectedApps.reduce((accumulator, app) => accumulator + app[1].time, 0) * 100)}%
+                                    </p>
+                                {/if}
+                            </div>
+                            
+                            {#if expandedState[appName]}
+                                <div class="flex flex-col gap-2 w-full transition-all duration-300">
+                                    {#each selectedPages[appName] as [pageName, pageMetadata]}
+                                        <div class="grid grid-cols-6 rounded gap-5">
+                                            <div></div>
+                                            <p class="col-span-4 truncate text-left text-[#888888]">
+                                                {pageName}
+                                            </p>
+                                            <p class="text-right text-[#888888]">
+                                                {Math.round(pageMetadata.time / selectedPages[appName].reduce((accumulator, [_, metadata]) => accumulator + metadata.time, 0) * 100)}%
+                                            </p>
+                                        </div>
+                                    {/each}
+                                </div>
+                            {/if}
+                        </button>
                     {/each}
                 </div>
             </div>

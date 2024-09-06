@@ -7,6 +7,7 @@
     import { 
         recording,
         recordingTimer,
+        graphUpdateListener
     } from '$lib/store.js';
     import {
         GREEN,
@@ -18,6 +19,10 @@
         ANALYSIS_DELAY,
         SNAPSHOT_DELAY
     } from "$lib/const.js";
+    import { 
+        UserRound,
+        BriefcaseBusiness,
+    } from 'lucide-svelte';
     
     export let data;
     const { supabase, user } = data;
@@ -61,15 +66,16 @@
 
     function test() {
         // Highlight.appStorage.clear();
-        for (let i = 0; i < 3; i++) {
-            Highlight.appStorage.set("test", 1);
-        }
+        // for (let i = 0; i < 10; i++) {
+        //     Highlight.appStorage.set("test", 1);
+        // }
         // let storage = Highlight.appStorage.all();
         // Object.keys(storage).forEach(key => {
         //     if (key.startsWith("screenshot")) {
         //         console.log(key);
         //     }
         // });
+        graphUpdateListener.update((n) => n + 1);
     }
 
     async function populateTestDataset() {
@@ -149,19 +155,32 @@
 </script>
 
 <div class="flex h-fit bg-black text-white overflow-hidden">
-    <div class="flex-shrink-0 flex flex-col gap-5 w-64 h-fit p-8 overflow-y-auto bg-black">
+    <div class="flex-shrink-0 flex flex-col gap-5 w-[250px] h-fit p-8 bg-black">
         <div class="flex flex-col gap-2">
             <h2>User Info</h2>
             <div class="flex flex-col gap-2 bg-zinc-800 p-5 rounded-lg">
-                <p>{userDisplayName}</p>
-                <p>{occupation}</p>
+                <div class="flex items-center gap-4">
+                    <div class="size-6">
+                        <UserRound />
+                    </div>
+                    <div class="w-28">
+                        <p class="text-[#888888]">Username</p>
+                        <p class="truncate">{userDisplayName}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="size-6">
+                        <BriefcaseBusiness />
+                    </div>
+                    <div class="w-28">
+                        <p class="text-[#888888]">Occupation</p>
+                        <p class="truncate">{occupation}</p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="flex flex-col gap-2">
-            <h2>Calendar</h2>
-            <ProductivityCalendar />
-        </div>
+        <ProductivityCalendar />
 
         <button class="bg-zinc-700 px-4 py-2 rounded-full hover:bg-zinc-600 transition-colors duration-300"
         on:click={test}>

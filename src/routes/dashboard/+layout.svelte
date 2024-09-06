@@ -6,7 +6,8 @@
     import { goto } from '$app/navigation';
     import { 
         recording,
-        recordingTimer
+        recordingTimer,
+        graphUpdateListener
      } from '$lib/store.js';
     import {
         ANALYSIS_DELAY,
@@ -18,8 +19,6 @@
 
     $: ({ supabase, session, username, user, avatar_url } = data)
 
-    let canvas; // Used to rescale image in imageToDataURL
-    let ctx;
     let unsubscribeRecording;
     let snapshotTimeout;
     let analysisTimeout;
@@ -174,6 +173,8 @@
             });
             console.log(`analysis: ${analysis.description}`);
         }
+        console.log("analyzed, now updating");
+        graphUpdateListener.update((n) => n + 1);
     }
 
     function toggleProfileDropdown(event) {
@@ -208,8 +209,6 @@
     }
 
     onMount(() => {
-        canvas = document.createElement('canvas');
-        ctx = canvas.getContext('2d');
         if (Highlight.isRunningInHighlight()) {
             subscribeRecording()
         }
@@ -287,7 +286,8 @@
             </div>
         </div>
     </nav>
-    <div class="pt-10 h-fit px-8 max-w-7xl mx-auto">
+    <div class="h-[8vh]"></div>
+    <div class="h-[92vh] px-8 max-w-7xl mx-auto">
         <slot />
     </div>
 </div>

@@ -20,14 +20,12 @@
                 method: "POST",
                 body: JSON.stringify({
                     id: id,
-                    username: username,
+                    username: username.trim(),
                     occupation: occupation,
                 }),
             });
-            // Add a success message or notification here
         } catch (error) {
             console.log(error.message);
-            // Add an error message or notification here
         } finally {
             isLoading = false;
         }

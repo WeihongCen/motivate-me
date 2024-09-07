@@ -31,7 +31,9 @@
     const rangeMax = convertToMidnightTimestamp(data.date) + range;
     let viewRange = [rangeMin, rangeMax];
     let timelineChart;
-    let chart;
+    let timelineChartObject;
+    let rangeChart;
+    let rangeChartObject;
     let selectedTime;
     let selectedAnalysis;
     let appDetails = {};
@@ -41,7 +43,7 @@
     let expandedState = {};
 
     const unsubscribeListener = graphUpdateListener.subscribe((value) => {
-        updateChart();
+        updateCharts();
     });
 
     function convertToMidnightTimestamp(dateString) {
@@ -50,11 +52,33 @@
         return date.getTime();
     }
 
-    async function createChart() {
-        chart = new Chart(timelineChart, {
+    async function createCharts() {
+        await Highlight.appStorage.whenHydrated();
+        let datasets = [];
+        for (let i = rangeMin; i <= rangeMax; i += ANALYSIS_DELAY) {
+            const analysisTimeKey = Math.round(i / ANALYSIS_DELAY) * ANALYSIS_DELAY;
+            const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
+            if (analysis) {
+                const productivityColor = analysis.productive ? GREEN : RED;
+                const hoverColor = analysis.productive ? GREEN_SECONDARY : RED_SECONDARY;
+                datasets.push({
+                    label: analysis.startTime,
+                    data: [
+                        {
+                            x: [new Date(analysis.startTime), new Date(analysis.endTime)],
+                            y: "Status",
+                        },
+                    ],
+                    backgroundColor: productivityColor,
+                    hoverBackgroundColor: hoverColor,
+                });
+            }
+        }
+
+        timelineChartObject = new Chart(timelineChart, {
             type: 'bar',
             data: {
-                datasets: []
+                datasets: datasets
             },
             options: {
                 indexAxis: 'y',
@@ -96,7 +120,7 @@
                 onHover: (e, element) => {
                     if (element.length) {
                         e.native.target.style.cursor = "pointer";
-                        chart.update();
+                        timelineChartObject.update();
                     } else {
                         e.native.target.style.cursor = "default";
                     }
@@ -105,7 +129,7 @@
                 onClick: async (e, element) => {
                     if (element.length) {
                         await Highlight.appStorage.whenHydrated();
-                        selectedTime = chart.data.datasets[element.at(0).datasetIndex].label;
+                        selectedTime = timelineChartObject.data.datasets[element.at(0).datasetIndex].label;
                         const analysisTimeKey = Math.floor(selectedTime / ANALYSIS_DELAY) * ANALYSIS_DELAY;
                         selectedAnalysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
                         appDetails = {};
@@ -160,43 +184,71 @@
             },
         });
 
-        await Highlight.appStorage.whenHydrated();
-        let datasets = [];
-        for (let i = data.timestamp; i <= data.timestamp + range; i += ANALYSIS_DELAY) {
-            const analysisTimeKey = Math.round(i / ANALYSIS_DELAY) * ANALYSIS_DELAY;
-            const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
-            if (analysis) {
-                const productivityColor = analysis.productive ? GREEN : RED;
-                const hoverColor = analysis.productive ? GREEN_SECONDARY : RED_SECONDARY;
-                datasets.push({
-                    label: analysis.startTime,
-                    data: [
-                        {
-                            x: [new Date(analysis.startTime), new Date(analysis.endTime)],
-                            y: "Status",
+        rangeChartObject = new Chart(rangeChart, {
+            type: 'bar',
+            data: {
+                datasets: datasets
+            },
+            options: {
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
                         },
-                    ],
-                    backgroundColor: productivityColor,
-                    hoverBackgroundColor: hoverColor,
-                });
-            }
-        }
+                        ticks: {
+                            display: false,
+                        },
+                        border: {
+                            display: false,
+                        },
+                        grid: {
+                            display: false,
+                        },
+                        min: new Date(convertToMidnightTimestamp(data.date)),
+                        max: new Date(convertToMidnightTimestamp(data.date) + range),
+                    },
+                    y: {
+                        beginAtZero: true,
+                        stacked: true,
+                        ticks: {
+                            display: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                },
+                animation: false,
+                plugins: {
+                    tooltip: {
+                        enabled: false
+                    },
+                    legend: {
+                        display: false
+                    },
+                },
+                maintainAspectRatio: false,
+            },
+        });
 
-        chart.data.datasets = datasets;
-
-        await updateChart();
+        await updateCharts();
     }
 
-    async function updateChart() {
-        if (chart) {
-            chart.options.scales.x.min = new Date(viewRange[0]);
-            chart.options.scales.x.max = new Date(viewRange[1]);
-            chart.update();
+    async function updateCharts() {
+        if (timelineChartObject) {
+            timelineChartObject.options.scales.x.min = new Date(viewRange[0]);
+            timelineChartObject.options.scales.x.max = new Date(viewRange[1]);
+            timelineChartObject.update();
         }
     }
 
     onMount(async () => {
-        await createChart();
+        await createCharts();
     });
 
     onDestroy(() => {
@@ -204,7 +256,7 @@
     });
 
     $: if (range) {
-        updateChart();
+        updateCharts();
     }
 </script>
 
@@ -223,12 +275,18 @@
         <canvas bind:this={timelineChart}/>
     </div>
 
-    <RangeSlider min={rangeMin} max={rangeMax} range 
-    pips pipstep={18} step={ANALYSIS_DELAY*2} float hoverable={false} 
-    formatter={(value, index, percent) => { return formatTimestampToAMPM(value) }}
-    all="label" 
-    bind:values={viewRange}
-    on:change={updateChart} />
+    <div class="relative">
+        <div class="absolute top-[25px] w-full h-[20px] px-4 pointer-events-none">
+            <canvas bind:this={rangeChart}/>
+        </div>
+        <RangeSlider
+        min={rangeMin} max={rangeMax} range 
+        pips pipstep={18} step={ANALYSIS_DELAY*2} float hoverable={false} 
+        formatter={(value, index, percent) => { return formatTimestampToAMPM(value) }}
+        all="label" 
+        bind:values={viewRange}
+        on:change={updateCharts} />
+    </div>
     
     <div class="bg-zinc-800 p-4 rounded-lg">
         {#if selectedAnalysis}
@@ -237,7 +295,9 @@
                     <div class={`size-4 rounded-full`}
                     style={`background-color: ${selectedAnalysis.productive ? GREEN : RED}`}>
                     </div>
-                    <p class="text-white">{formatTimestampToAMPM(selectedAnalysis.startTime)}</p>
+                    <p class="text-white">
+                        {formatTimestampToAMPM(selectedAnalysis.startTime)}
+                    </p>
                 </div>
                 <p class="">{selectedAnalysis.description}</p>
                 <div class="flex flex-col mt-5 gap-2">

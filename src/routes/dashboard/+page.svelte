@@ -148,8 +148,8 @@
 
 </script>
 
-<div class="flex h-fit bg-black text-white overflow-hidden">
-    <div class="flex-shrink-0 flex flex-col gap-5 w-[250px] h-fit p-8 bg-black">
+<div class="flex h-fit overflow-hidden gap-10">
+    <div class="flex-shrink-0 flex flex-col gap-5 w-[250px] h-fit bg-black">
         <div class="flex justify-between items-center">
             <button 
                 class={`
@@ -212,7 +212,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 w-1/2 p-8">
+    <div class="flex-1 w-1/2">
         <!-- <div class="mb-8 grid grid-cols-2 gap-4">
             <div class="bg-gray-800 p-4 rounded-lg">
                 <p class="text-sm text-gray-400 mb-2">Average Productive Time</p>

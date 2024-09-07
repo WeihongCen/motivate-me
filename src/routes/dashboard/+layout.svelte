@@ -232,7 +232,7 @@
 </script>
 
 <div class="min-h-screen text-white font-sans bg-black relative">
-    <nav class="fixed top-0 left-0 right-0 flex justify-between items-center px-8 py-2 bg-opacity-80 backdrop-filter backdrop-blur-lg z-50 border-b border-zinc-800">
+    <nav class="fixed top-0 h-[8vh] left-0 right-0 flex justify-between items-center px-8 py-2 bg-opacity-80 backdrop-filter backdrop-blur-lg z-50 border-b border-zinc-800">
         <a href="/dashboard" class="flex items-center space-x-4">
             <img src="/favicon.png" alt="Logo" class="size-8">
         </a>
@@ -296,7 +296,7 @@
         </div>
     </nav>
     <div class="h-[8vh]"></div>
-    <div class="h-[92vh] px-8 max-w-7xl mx-auto">
+    <div class="h-[92vh] p-8 max-w-7xl mx-auto">
         <slot />
     </div>
 </div>

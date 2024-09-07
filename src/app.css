@@ -4,9 +4,26 @@
 
 :root {
     color-scheme: dark;
-    --color-productive: #96eeb6;
-    --color-unproductive: #ffb7b7;
-    --color-idle: #eaeaea;
+
+    --range-slider:          #888888; /* slider main background color */
+    --range-handle-inactive: #fed7aa; /* inactive handle color */
+    --range-handle:          #f97316; /* non-focussed handle color */
+    --range-handle-focus:    var(--range-handle); /* focussed handle color */
+    --range-handle-border:   var(--range-handle); /* handle border color */
+    --range-range-inactive:  var(--range-handle-inactive); /* inactive range bar background color */
+    --range-range:           var(--range-handle-focus); /* active range background color */
+    --range-float-inactive:  var(--range-handle-inactive); /* inactive floating label background color */
+    --range-float:           var(--range-handle-focus); /* floating label background color */
+    --range-float-text:      white; /* text color on floating label */
+    
+    --range-pip:                #888888; /* color of the base pips */
+    --range-pip-text:           var(--range-pip); /* color of the base labels */
+    --range-pip-active:         var(--range-pip); /* active pips (when handle is on a slider-stop) */
+    --range-pip-active-text:    var(--range-pip-active); /* active labels (when handle is on a slider-stop) */
+    --range-pip-hover:          var(--range-pip); /* when a slider-stop is hovered */
+    --range-pip-hover-text:     var(--range-pip-hover); /* when a slider-stop is hovered */
+    --range-pip-in-range:       var(--range-pip-active); /* pips inside the range */
+    --range-pip-in-range-text:  var(--range-pip-active-text); /* labels inside the range */
 }
 
 body {

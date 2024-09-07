@@ -6,6 +6,8 @@
     } from "svelte";
     import Chart from "chart.js/auto";
     import 'chartjs-adapter-luxon';
+    import RangeSlider from 'svelte-range-slider-pips';
+    import { ArrowLeft } from 'lucide-svelte';
     import {
         graphUpdateListener
     } from "$lib/store.js"
@@ -22,7 +24,12 @@
         formatTime
     } from "$lib/FormatTime.js"
 
-    let range = 3600000;
+    export let data;
+
+    const range = 86400000;
+    const rangeMin = convertToMidnightTimestamp(data.date);
+    const rangeMax = convertToMidnightTimestamp(data.date) + range;
+    let viewRange = [rangeMin, rangeMax];
     let timelineChart;
     let chart;
     let selectedTime;
@@ -36,6 +43,12 @@
     const unsubscribeListener = graphUpdateListener.subscribe((value) => {
         updateChart();
     });
+
+    function convertToMidnightTimestamp(dateString) {
+        const [year, month, day] = dateString.split('-');
+        const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+        return date.getTime();
+    }
 
     async function createChart() {
         chart = new Chart(timelineChart, {
@@ -52,7 +65,7 @@
                             unit: 'minute',
                         },
                         ticks: {
-                            stepSize: 10,
+                            stepSize: 30,
                             color: '#888888'
                         },
                         border: {
@@ -63,8 +76,8 @@
                             tickWidth: 2,
                             lineWidth: 0,
                         },
-                        min: new Date(Date.now() - range),
-                        max: new Date(Date.now()),
+                        min: new Date(convertToMidnightTimestamp(data.date)),
+                        max: new Date(convertToMidnightTimestamp(data.date) + range),
                     },
                     y: {
                         beginAtZero: true,
@@ -147,38 +160,37 @@
             },
         });
 
+        await Highlight.appStorage.whenHydrated();
+        let datasets = [];
+        for (let i = data.timestamp; i <= data.timestamp + range; i += ANALYSIS_DELAY) {
+            const analysisTimeKey = Math.round(i / ANALYSIS_DELAY) * ANALYSIS_DELAY;
+            const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
+            if (analysis) {
+                const productivityColor = analysis.productive ? GREEN : RED;
+                const hoverColor = analysis.productive ? GREEN_SECONDARY : RED_SECONDARY;
+                datasets.push({
+                    label: analysis.startTime,
+                    data: [
+                        {
+                            x: [new Date(analysis.startTime), new Date(analysis.endTime)],
+                            y: "Status",
+                        },
+                    ],
+                    backgroundColor: productivityColor,
+                    hoverBackgroundColor: hoverColor,
+                });
+            }
+        }
+
+        chart.data.datasets = datasets;
+
         await updateChart();
     }
 
     async function updateChart() {
         if (chart) {
-            await Highlight.appStorage.whenHydrated();
-            const curTime = Date.now();
-            const timeKey = Math.round(curTime / ANALYSIS_DELAY) * ANALYSIS_DELAY;
-            let datasets = [];
-            for (let i = timeKey; i >= timeKey - range; i -= ANALYSIS_DELAY) {
-                const analysisTimeKey = Math.round(i / ANALYSIS_DELAY) * ANALYSIS_DELAY;
-                const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
-                if (analysis) {
-                    const productivityColor = analysis.productive ? GREEN : RED;
-                    const hoverColor = analysis.productive ? GREEN_SECONDARY : RED_SECONDARY;
-                    datasets.push({
-                        label: analysis.startTime,
-                        data: [
-                            {
-                                x: [new Date(analysis.startTime), new Date(analysis.endTime)],
-                                y: "Status",
-                            },
-                        ],
-                        backgroundColor: productivityColor,
-                        hoverBackgroundColor: hoverColor,
-                    });
-                }
-            }
-
-            chart.data.datasets = datasets;
-            chart.options.scales.x.min = new Date(curTime - range);
-            chart.options.scales.x.max = new Date(curTime);
+            chart.options.scales.x.min = new Date(viewRange[0]);
+            chart.options.scales.x.max = new Date(viewRange[1]);
             chart.update();
         }
     }
@@ -197,21 +209,26 @@
 </script>
 
 <div class="flex flex-col gap-5 min-w-[500px]">
-    <div class="flex justify-between">
-        <h2 class="text-2xl font-bold mb-4 flex justify-between items-center">
-            Recent Activity
+    <div class="flex gap-5">
+        <a class="size-8"
+        href="/dashboard/calendar">
+            <ArrowLeft class="size-full m-auto stroke-zinc-300 hover:stroke-white" />
+        </a>
+        <h2 class="text-2xl font-bold flex justify-between items-center">
+            {data.date}
         </h2>
-        <select class="px-2 bg-zinc-800 rounded cursor-pointer"
-        bind:value={range}>
-            <option value={3600000}>1 hour</option>
-            <option value={10800000}>3 hours</option>
-            <option value={43200000}>12 hours</option>
-        </select>
     </div>
 
     <div class="bg-zinc-800 p-4 rounded-lg h-[100px]">
         <canvas bind:this={timelineChart}/>
     </div>
+
+    <RangeSlider min={rangeMin} max={rangeMax} range 
+    pips pipstep={18} step={ANALYSIS_DELAY*2} float hoverable={false} 
+    formatter={(value, index, percent) => { return formatTimestampToAMPM(value) }}
+    all="label" 
+    bind:values={viewRange}
+    on:change={updateChart} />
     
     <div class="bg-zinc-800 p-4 rounded-lg">
         {#if selectedAnalysis}

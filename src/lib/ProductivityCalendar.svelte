@@ -14,34 +14,30 @@
         SNAPSHOT_DELAY
     } from "$lib/const.js";
     import { EllipsisVertical } from 'lucide-svelte';
+    import {
+        formatDateYYYYMMDD,
+    } from "$lib/FormatTime.js"
     
     let calendar = [];
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
 
     const unsubscribeListener = graphUpdateListener.subscribe(async (value) => {
 		await generateMonthCalendar();
 	});
 
-    function formatDate() {
-        const options = { month: 'long', day: 'numeric' };
-        const today = new Date();
-        const formattedDate = today.toLocaleDateString('en-US', options);
-        return formattedDate;
-    }
-
     async function generateMonthCalendar() {
         if (Highlight.isRunningInHighlight()) {
             await Highlight.appStorage.whenHydrated();
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth() + 1;
-            const daysInMonth = new Date(year, month, 0).getDate();
-            const firstDay = new Date(year, month-1, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDay = new Date(year, month, 1).getDay();
             const newCalendar = new Array(firstDay).fill({
                 day: 0,
                 productivity: -1,
             });
             for (let day = 1; day <= daysInMonth; day++) {
-                const dayTimestamp = new Date(year, month - 1, day).getTime();
+                const dayTimestamp = new Date(year, month, day).getTime();
                 let dayTotalTime = 0;
                 let dayProductivity = 0; 
                 for (let i = dayTimestamp; i < dayTimestamp + 86400000; i += ANALYSIS_DELAY) {
@@ -103,19 +99,27 @@
                 <div></div>
             {:else}
                 <div class={`relative aspect-square bg-white rounded-md overflow-hidden`}>
-                    {#if productivity !== -1}
-                        <div class={`absolute top-0 size-full bg-emerald-500 rounded-md`}
-                        style={`--tw-bg-opacity: ${(productivity-0.5)*2}`}>
-                        </div>
-                        <div class={`absolute top-0 size-full bg-red-500 rounded-md`}
-                        style={`--tw-bg-opacity: ${(0.5-productivity)*2}`}>
+                    {#if productivity === -1}
+                        <div class={`size-full bg-zinc-800`}>
                         </div>
                     {:else}
-                        <div class={`size-[200%] bg-zinc-800`}>
-                        </div>
+                        {#if productivity > 0.5}
+                            <div class={`size-full bg-emerald-500`}
+                            style={`--tw-bg-opacity: ${(productivity-0.5)*2}`}>
+                            </div>
+                        {:else}
+                            <div class={`size-full bg-red-500`}
+                            style={`--tw-bg-opacity: ${(0.5-productivity)*2}`}>
+                            </div>
+                        {/if}
+                        <a class={`absolute top-0 size-full text-[10px] font-semibold text-black text-center content-center text-opacity-0 
+                            bg-opacity-0 bg-white hover:bg-opacity-30 hover:text-opacity-100`}
+                        href={`/dashboard/calendar/${formatDateYYYYMMDD(year, month+1, day)}`}>
+                            {Math.round(productivity * 100)}
+                        </a>
                     {/if}
                     {#if day === new Date().getDate()}
-                        <div class={`absolute top-0 size-full border-2 rounded-md`}>
+                        <div class={`absolute top-0 size-full border-2 rounded-md pointer-events-none`}>
                         </div>
                     {/if}
                 </div>

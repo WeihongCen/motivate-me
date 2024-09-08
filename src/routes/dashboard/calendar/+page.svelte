@@ -8,11 +8,13 @@
     } from "$lib/const.js";
     import { 
         ChevronLeft,
-        ChevronRight
+        ChevronRight,
+        Calendar
     } from 'lucide-svelte';
     import {
         formatDateYYYYMMDD,
-        formatDateMonthYYYY
+        formatDateMonthYYYY,
+        isCurrentDate
     } from "$lib/FormatTime.js"
     
     let selectedYear = new Date().getFullYear();
@@ -20,12 +22,6 @@
     let displayDate = formatDateMonthYYYY(selectedYear, selectedMonth);
     let calendar = [];
     let calendarRows = 5;
-
-    function isCurrentDate(dayTimestamp) {
-        const now = new Date();
-        const currentDateTimestamp = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        return dayTimestamp === currentDateTimestamp;
-    }
 
     async function decrementMonth() {
         if (selectedMonth === 0) {
@@ -114,10 +110,15 @@
                     completeAnalysis += analysis.description + "\n";
                 }
             }
+            const system = `
+                You return two keywords for the text. 
+                Only return the keywords in this format:
+                keyword1, keyword2
+            `;
             const messages = [
                 {
                     role: 'system',
-                    content: 'You return one keyword for the text. Only return the keyword.',
+                    content: system,
                 },
                 {
                     role: 'user',
@@ -144,17 +145,17 @@
     });
 </script>
 
-<div class="flex flex-col gap-2 h-full pb-8">
+<div class="flex flex-col gap-2 h-[80vh]">
     <div class="flex justify-end items-center">
         <div class="flex items-center gap-5">
-            <button class="size-8 border border-zinc-500 hover:bg-zinc-800 rounded-md"
+            <button class="size-8 border border-zinc-700 hover:bg-zinc-700 rounded-md"
             on:click={decrementMonth}>
                 <ChevronLeft strokeWidth={3} class="size-1/2 m-auto stroke-white" />
             </button>
             <div class="w-28">
                 <h2 class="text-center text-[#bbbbbb] text-nowrap">{displayDate}</h2>
             </div>
-            <button class="size-8 border border-zinc-500 hover:bg-zinc-800 rounded-md"
+            <button class="size-8 border border-zinc-700 hover:bg-zinc-700 rounded-md"
             on:click={incrementMonth}>
                 <ChevronRight strokeWidth={3} class="size-1/2 m-auto stroke-white" />
             </button>
@@ -209,6 +210,13 @@
                                     <div class="flex items-center h-4">
                                         {#if !isCurrentDate(dayTimestamp)}
                                             <div class="animate-pulse h-2 w-full bg-black bg-opacity-50 rounded-full">
+                                            </div>
+                                        {:else}
+                                            <div class="flex items-center gap-1 h-4 text-black">
+                                                <Calendar class="size-4 stroke-[1.5]" /> 
+                                                <p class={`text-black text-xs truncate`}>
+                                                    Today
+                                                </p>
                                             </div>
                                         {/if}
                                     </div>

@@ -49,3 +49,9 @@ export function formatDateMonthYYYY(year, month) {
     const formattedDate = today.toLocaleDateString('en-US', options);
     return formattedDate;
 }
+
+export function isCurrentDate(dayTimestamp) {
+    const now = new Date();
+    const currentDateTimestamp = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return dayTimestamp === currentDateTimestamp;
+}

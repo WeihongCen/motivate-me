@@ -64,14 +64,12 @@ export const POST = async ({ request, locals: { supabase, user } }) => {
         }
 
         const prompt = `
-            Describe what the user is doing using a screenshot and the name of the window.  
-            Be specific and don't preface with "The user is".
-            In addition, determine if the user is productive or not based on their occupation.
-
             Window name: ${focusedWindowTitle}
             User occupation: ${occupation}
 
-            Return in JSON format.
+            Return in JSON format
+            where "productive" determines if the user is productive or not based on their occupation
+            and "description" describe what the user is doing using the screenshot and the name of the window.  
 
             Example response:
             { "productive": true, "description": "Writing and editing JavaScript code. Working on a function that generates a JSON response based on user input and occupation." }

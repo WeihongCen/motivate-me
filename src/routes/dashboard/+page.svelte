@@ -68,18 +68,23 @@
         return { mostFrequentTitle, resultURL };
     }
 
-    function test() {
+    async function test() {
         // Highlight.appStorage.clear();
         // for (let i = 0; i < 10; i++) {
         //     Highlight.appStorage.set("test", 1);
         // }
-        let storage = Highlight.appStorage.all();
-        Object.keys(storage).forEach(key => {
-            if (key.startsWith("daySummary")) {
-                Highlight.appStorage.delete(key);
-            }
-        });
+        // let storage = Highlight.appStorage.all();
+        // Object.keys(storage).forEach(key => {
+        //     if (key.startsWith("dayKeyword")) {
+        //         Highlight.appStorage.delete(key);
+        //     }
+        // });
         // graphUpdateListener.update((n) => n + 1);
+        // const windows = await Highlight.user.getWindows();
+        // console.log(windows[0].windowTitle);
+        // if (windows[0]) {
+        //     console.log("exist");
+        // }
     }
 
     async function populateTestDataset() {
@@ -186,7 +191,7 @@
                     <div class="size-6">
                         <UserRound />
                     </div>
-                    <div class="w-28">
+                    <div class="flex-1">
                         <p class="text-[#888888]">Username</p>
                         <p class="truncate">{userDisplayName}</p>
                     </div>
@@ -195,7 +200,7 @@
                     <div class="size-6">
                         <BriefcaseBusiness />
                     </div>
-                    <div class="w-28">
+                    <div class="flex-1">
                         <p class="text-[#888888]">Occupation</p>
                         <p class="truncate">{occupation}</p>
                     </div>

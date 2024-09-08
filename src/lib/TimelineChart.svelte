@@ -80,6 +80,7 @@
                         }
                     },
                 },
+                animation: false,
                 onHover: (e, element) => {
                     if (element.length) {
                         e.native.target.style.cursor = "pointer";
@@ -88,7 +89,6 @@
                         e.native.target.style.cursor = "default";
                     }
                 },
-                animation: false,
                 onClick: async (e, element) => {
                     if (element.length) {
                         await Highlight.appStorage.whenHydrated();
@@ -111,7 +111,8 @@
                                     expandedState[snapshot.focusedWindowApp] = false;
                                 }
                                 if (snapshot.focusedWindowTitle) {
-                                    const pageTitle = snapshot.focusedWindowTitle.split(" - ").at(0);
+                                    let titleParts = snapshot.focusedWindowTitle.split(" - ");
+                                    const pageTitle = titleParts.length === 1 ? titleParts[0] : titleParts.slice(0, -1).join(" - ");
                                     if (pageTitle) {
                                         if (pageDetails[snapshot.focusedWindowApp][pageTitle]) {
                                             pageDetails[snapshot.focusedWindowApp][pageTitle].time += snapshot.endTime - snapshot.startTime;
@@ -172,6 +173,8 @@
                         ],
                         backgroundColor: productivityColor,
                         hoverBackgroundColor: hoverColor,
+                        borderRadius: 3,
+                        borderSkipped: false,
                     });
                 }
             }
@@ -197,11 +200,11 @@
 </script>
 
 <div class="flex flex-col gap-5 min-w-[500px]">
-    <div class="flex justify-between">
-        <h2 class="text-2xl font-bold mb-4 flex justify-between items-center">
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold">
             Recent Activity
         </h2>
-        <select class="px-2 bg-zinc-800 rounded cursor-pointer"
+        <select class="h-10 px-2 bg-zinc-800 rounded cursor-pointer"
         bind:value={range}>
             <option value={3600000}>1 hour</option>
             <option value={10800000}>3 hours</option>

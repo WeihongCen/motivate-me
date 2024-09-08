@@ -92,7 +92,7 @@
     </div>
     <div class="grid grid-cols-7 w-full gap-1">
         {#each ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as day}
-            <p class="w-5 text-xs text-center">{day}</p>
+            <p class="w-full text-xs text-center">{day}</p>
         {/each}
         {#each calendar as {day, productivity}, index}
             {#if day === 0}

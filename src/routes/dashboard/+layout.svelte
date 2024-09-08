@@ -4,6 +4,7 @@
     import { invalidate } from '$app/navigation'
     import { onMount } from 'svelte'
     import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
     import { 
         Gauge,
         Calendar,
@@ -91,24 +92,26 @@
 
     async function takeSnapshot() {
         const windows = await Highlight.user.getWindows();
-        const focusedWindowTitle = windows[0].windowTitle;
-        const focusedWindowApp = focusedWindowTitle.split(" - ").at(-1);
-        const focusedWindowIcon = windows[0].appIcon;
-        const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
-        const snapshotMetadata = {
-            focusedWindowTitle: focusedWindowTitle,
-            focusedWindowApp: focusedWindowApp,
-            startTime: snapshotTimestamp,
-            endTime: snapshotTimestamp = Date.now(),
-        };
-        const timeKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) * SNAPSHOT_DELAY;
-        const screenshotKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) % SNAPSHOT_STORAGE_LIMIT;
-        Highlight.appStorage.set(`snapshots/${timeKey}`, snapshotMetadata);
-        if (Highlight.appStorage.get(`appIcons/${focusedWindowApp}`) !== focusedWindowIcon) {
-            Highlight.appStorage.set(`appIcons/${focusedWindowApp}`, focusedWindowIcon);
+        if (windows[0]) {
+            const focusedWindowTitle = windows[0].windowTitle;
+            const focusedWindowApp = focusedWindowTitle.split(" - ").at(-1);
+            const focusedWindowIcon = windows[0].appIcon;
+            const focusedWindowScreenshot = await Highlight.user.getWindowScreenshot(focusedWindowTitle);
+            const snapshotMetadata = {
+                focusedWindowTitle: focusedWindowTitle,
+                focusedWindowApp: focusedWindowApp,
+                startTime: snapshotTimestamp,
+                endTime: snapshotTimestamp = Date.now(),
+            };
+            const timeKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) * SNAPSHOT_DELAY;
+            const screenshotKey = Math.floor(snapshotMetadata.startTime / SNAPSHOT_DELAY) % SNAPSHOT_STORAGE_LIMIT;
+            Highlight.appStorage.set(`snapshots/${timeKey}`, snapshotMetadata);
+            if (Highlight.appStorage.get(`appIcons/${focusedWindowApp}`) !== focusedWindowIcon) {
+                Highlight.appStorage.set(`appIcons/${focusedWindowApp}`, focusedWindowIcon);
+            }
+            Highlight.appStorage.set(`screenshots/${screenshotKey}`, focusedWindowScreenshot);
+            console.log(`snapshot: ${focusedWindowTitle}`);
         }
-        Highlight.appStorage.set(`screenshots/${screenshotKey}`, focusedWindowScreenshot);
-        console.log(`snapshot: ${focusedWindowTitle}`);
     }
 
     function findMostFrequentWindowSnapshot(data) {
@@ -180,7 +183,6 @@
             });
             console.log(`analysis: ${analysis.description}`);
         }
-        console.log("analyzed, now updating");
         graphUpdateListener.update((n) => n + 1);
     }
 
@@ -232,20 +234,24 @@
 </script>
 
 <div class="min-h-screen text-white font-sans bg-black relative">
-    <nav class="fixed top-0 h-[8vh] left-0 right-0 flex justify-between items-center px-8 py-2 bg-opacity-80 backdrop-filter backdrop-blur-lg z-50 border-b border-zinc-800">
+    <nav class="fixed top-0 h-[8vh] left-0 right-0 flex justify-between items-center px-8 py-2 bg-opacity-60 backdrop-filter backdrop-blur-lg z-50 bg-black">
         <a href="/dashboard" class="flex items-center space-x-4">
             <img src="/favicon.png" alt="Logo" class="size-8">
         </a>
         <div class="flex gap-10">
-            <a class="flex flex-col items-center gap-1"
-            href="/dashboard">
+            <a class="flex flex-col items-center hover:text-white"
+                href="/dashboard"
+                class:text-white={$page.url.pathname === '/dashboard'}
+                class:text-zinc-400={$page.url.pathname !== '/dashboard'}>
                 <Gauge />
-                <p class="text-white text-xs">Dashboard</p>
+                <span class="text-xs">Dashboard</span>
             </a>
-            <a class="flex flex-col items-center gap-1"
-            href="/dashboard/calendar">
+            <a class="flex flex-col items-center hover:text-white"
+                href="/dashboard/calendar"
+                class:text-white={$page.url.pathname === '/dashboard/calendar'}
+                class:text-zinc-400={$page.url.pathname !== '/dashboard/calendar'}>
                 <Calendar />
-                <p class="text-white text-xs">Calendar</p>
+                <span class="text-xs">Calendar</span>
             </a>
             <div class="flex items-center space-x-6">
                 <div class="relative profile-dropdown">
@@ -296,7 +302,7 @@
         </div>
     </nav>
     <div class="h-[8vh]"></div>
-    <div class="h-[92vh] p-8 max-w-7xl mx-auto">
+    <div class="p-8 max-w-7xl mx-auto">
         <slot />
     </div>
 </div>

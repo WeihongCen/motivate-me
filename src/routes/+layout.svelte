@@ -33,7 +33,7 @@
                 <nav class="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm">
                     <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                         <a 
-                            class="flex items-center gap-2"
+                            class="flex items-center gap-2 font-semibold"
                             href="/"
                         >
                             <img
@@ -54,7 +54,7 @@
 
                 <footer class="py-12">
                     <div class="container mx-auto px-6 text-center text-gray-400">
-                        <p>&copy; 2023 Motivate Me. All rights reserved.</p>
+                        <p>&copy; 2024 Motivate Me. All rights reserved.</p>
                     </div>
                 </footer>
             </div>

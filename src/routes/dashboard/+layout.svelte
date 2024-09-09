@@ -38,6 +38,25 @@
     
     let isProfileDropdownOpen = false;
 
+    async function test() {
+        // Highlight.appStorage.clear();
+        for (let i = 0; i < 10; i++) {
+            Highlight.appStorage.set("test", 1);
+        }
+        // let storage = Highlight.appStorage.all();
+        // Object.keys(storage).forEach(key => {
+        //     if (key.startsWith("daySummary")) {
+        //         Highlight.appStorage.delete(key);
+        //     }
+        // });
+        // graphUpdateListener.update((n) => n + 1);
+        // const windows = await Highlight.user.getWindows();
+        // console.log(windows[0].windowTitle);
+        // if (windows[0]) {
+        //     console.log("exist");
+        // }
+    }
+
     function subscribeRecording() {
         unsubscribeRecording = recording.subscribe((bRecording) => {
             if (bRecording) {
@@ -238,6 +257,10 @@
         <a href="/dashboard" class="flex items-center space-x-4">
             <img src="/favicon.png" alt="Logo" class="size-8">
         </a>
+        <button class="bg-zinc-700 px-4 py-2 rounded-full hover:bg-zinc-600 transition-colors duration-300"
+        on:click={test}>
+            test
+        </button>
         <div class="flex gap-10">
             <a class="flex flex-col items-center hover:text-white"
                 href="/dashboard"

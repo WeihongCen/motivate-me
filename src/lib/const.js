@@ -3,8 +3,8 @@ export const UNPRODUCTIVE_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
 export const PRODUCTIVE_DESCRIPTION = "The user is being productive";
 export const UNPRODUCTIVE_DESCRIPTION = "The user is not productive";
 
-export const GREEN = "#10b981";
-export const RED = "#ef4444";
+export const GREEN = "#34d399";
+export const RED = "#f87171";
 export const GREEN_SECONDARY = "#86efac";
 export const RED_SECONDARY = "#fca5a5";
 

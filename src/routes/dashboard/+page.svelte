@@ -68,25 +68,6 @@
         return { mostFrequentTitle, resultURL };
     }
 
-    async function test() {
-        // Highlight.appStorage.clear();
-        // for (let i = 0; i < 10; i++) {
-        //     Highlight.appStorage.set("test", 1);
-        // }
-        // let storage = Highlight.appStorage.all();
-        // Object.keys(storage).forEach(key => {
-        //     if (key.startsWith("dayKeyword")) {
-        //         Highlight.appStorage.delete(key);
-        //     }
-        // });
-        // graphUpdateListener.update((n) => n + 1);
-        // const windows = await Highlight.user.getWindows();
-        // console.log(windows[0].windowTitle);
-        // if (windows[0]) {
-        //     console.log("exist");
-        // }
-    }
-
     async function populateTestDataset() {
         await Highlight.appStorage.whenHydrated();
         let testSnapshots = [];
@@ -209,11 +190,6 @@
         </div>
 
         <ProductivityCalendar />
-
-        <button class="bg-zinc-700 px-4 py-2 rounded-full hover:bg-zinc-600 transition-colors duration-300"
-        on:click={test}>
-            test
-        </button>
     </div>
 
     <!-- Main Content -->

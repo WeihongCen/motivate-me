@@ -104,11 +104,11 @@
                         </div>
                     {:else}
                         {#if productivity > 0.5}
-                            <div class={`size-full bg-emerald-500`}
+                            <div class={`size-full bg-emerald-400`}
                             style={`--tw-bg-opacity: ${(productivity-0.5)*2}`}>
                             </div>
                         {:else}
-                            <div class={`size-full bg-red-500`}
+                            <div class={`size-full bg-red-400`}
                             style={`--tw-bg-opacity: ${(0.5-productivity)*2}`}>
                             </div>
                         {/if}

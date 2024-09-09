@@ -27,6 +27,11 @@
     import ColorThief from 'colorthief';
 
     export let data;
+    let status = {
+        total: 0,
+        productive: 0,
+        unproductive: 0,
+    };
     let summary;
 
     const range = 86400000;
@@ -96,6 +101,12 @@
             const analysisTimeKey = Math.round(i / ANALYSIS_DELAY) * ANALYSIS_DELAY;
             const analysis = Highlight.appStorage.get(`analysis/${analysisTimeKey}`);
             if (analysis) {
+                if (analysis.productive) {
+                    status.productive += analysis.endTime - analysis.startTime;
+                } else {
+                    status.unproductive += analysis.endTime - analysis.startTime;
+                }
+                status.total += analysis.endTime - analysis.startTime;
                 if (!firstAnalysisTimestamp) {
                     firstAnalysisTimestamp = i;
                 }
@@ -300,7 +311,7 @@
                     const color = await getDominantColor(icon);
                     cumulativeApps[snapshot.focusedWindowApp] = {
                         icon: icon,
-                        color: lightenHexColor(color, -20),
+                        color: color,
                         hoverColor: color,
                         duration: snapshot.endTime - snapshot.startTime,
                     }
@@ -383,47 +394,43 @@
     }
 
     async function generateSummary() {
-        if (!isCurrentDate(dayTimestamp)) {
+        summary = Highlight.appStorage.get(`daySummary/${data.localTimestamp}`);
+        if (!summary) {
             let completeAnalysis = "";
-            for (let i = dayTimestamp; i < dayTimestamp + 86400000; i += ANALYSIS_DELAY) {
+            for (let i = rangeMin; i < rangeMax; i += ANALYSIS_DELAY) {
                 const analysis = Highlight.appStorage.get(`analysis/${i}`);
                 if (analysis) {
                     completeAnalysis += analysis.description + "\n";
-                }
-            }
-            const system = `
-                You return two keywords for the text. 
-                Only return the keywords in this format:
-                keyword1, keyword2
-            `;
-            const messages = [
-                {
-                    role: 'system',
-                    content: system,
-                },
-                {
-                    role: 'user',
-                    content: completeAnalysis,
-                }
-            ];
-            const options = {
-                temperature: 0,
-                maxTokens: 10,
-            };
-            const textPrediction = Highlight.inference.getTextPrediction(messages, options);
-            let prediction = "";
-            for await (const chunk of textPrediction) {
-                prediction += chunk
-            }
-            Highlight.appStorage.set(`dayKeyword/${dayTimestamp}`, prediction);
-            return prediction;
-        }
-        return "";
-        if (Highlight.appStorage.get(`${day}`)) {
 
-        }
-        if (isCurrentDate(data.localTimestamp)) {
-            
+                }
+            }
+            if (completeAnalysis) {
+                const system = `
+                    You return a short summary for what the user did.
+                    Don't preface with "You spent time".
+                `;
+                const messages = [
+                    {
+                        role: 'system',
+                        content: system,
+                    },
+                    {
+                        role: 'user',
+                        content: completeAnalysis,
+                    }
+                ];
+                const options = {
+                    temperature: 0,
+                };
+                const textPrediction = Highlight.inference.getTextPrediction(messages, options);
+                summary = "";
+                for await (const chunk of textPrediction) {
+                    summary += chunk;
+                }
+                if (!isCurrentDate(data.localTimestamp)) {
+                    Highlight.appStorage.set(`daySummary/${data.localTimestamp}`, summary);
+                }
+            }
         }
     }
 
@@ -437,14 +444,17 @@
 
     onMount(async () => {
         await Highlight.appStorage.whenHydrated();
-        await createPieChart();
         await createBarCharts();
+        await createPieChart();
+        if (Date.now() > data.localTimestamp) {
+            await generateSummary();
+        }
     });
-
+    
     onDestroy(() => {
         unsubscribeListener();
     });
-
+    
     $: if (range) {
         updateTimelineChartRange();
     }
@@ -464,7 +474,35 @@
     <div class="grid grid-cols-3 gap-10 w-full">
         <div class="flex flex-col gap-2">
             <h2>Overview</h2>
-            <div class="flex items-center gap-10 p-4 h-80 bg-zinc-800 rounded-lg">
+            <div class="flex flex-col gap-5 p-4 h-80 bg-zinc-800 rounded-lg overflow-auto">
+                {#if status.total > 0}
+                    <div>
+                        <div class="flex w-full h-20 rounded overflow-hidden">
+                            <div class="h-full bg-emerald-400 overflow-hidden"
+                            style={`width: ${status.productive/status.total*100}%`}>
+                                {#if Math.round(status.productive/status.total*100) > 0}
+                                    <p class="h-full text-2xl font-semibold text-black text-center content-center">
+                                        {Math.round(status.productive/status.total*100)}
+                                    </p>
+                                {/if}
+                            </div>
+                            <div class="h-full bg-red-400 overflow-hidden"
+                            style={`width: ${status.unproductive/status.total*100}%`}>
+                                {#if Math.round(status.unproductive/status.total*100) > 0}
+                                    <p class="h-full text-2xl font-semibold text-black text-center content-center">
+                                        {Math.round(status.unproductive/status.total*100)}
+                                    </p>
+                                {/if}
+                            </div>
+                        </div>
+                        <p class="text-neutral-500 text-right">{formatTime(status.total)}</p>
+                    </div>
+                    {#if summary}
+                        <p>{summary}</p>
+                    {/if}
+                {:else}
+                    <p>There is no activity to report.</p>
+                {/if}
             </div>
         </div>
 

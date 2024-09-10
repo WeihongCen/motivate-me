@@ -27,7 +27,7 @@
 </svelte:head>
 
 {#if !isDashboard}
-    <div class="min-h-screen text-white font-sans bg-black mt-4">
+    <div class="min-h-screen text-white font-sans bg-black">
         <div class="bg-[url('/gradient-blob.png')] bg-no-repeat bg-cover bg-center">
             <div class="bg-black bg-opacity-50 min-h-screen">
                 <nav class="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm">
@@ -48,7 +48,7 @@
                         </div>
                     </div>
                 </nav>
-                <div class="pt-16">
+                <div class="pt-6">
                     <slot />
                 </div>
 

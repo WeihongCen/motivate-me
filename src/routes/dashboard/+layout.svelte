@@ -245,7 +245,9 @@
         document.addEventListener('keydown', handleKeydown);
 
         return () => {
-            unsubscribeRecording();
+            if (Highlight.isRunningInHighlight()) {
+                unsubscribeRecording();
+            }
             document.removeEventListener('click', handleClickOutside);
             document.removeEventListener('keydown', handleKeydown);
         };

@@ -60,7 +60,7 @@
 
             <button
                 type="submit"
-                class="w-full bg-orange-400 text-black font-semibold py-3 rounded-lg hover:bg-orange-500 transition duration-300 flex items-center justify-center"
+                class="w-full bg-orange-400 text-black font-semibold py-3 rounded-lg hover:bg-orange-500 flex items-center justify-center"
                 disabled={isLoading}
             >
                 {#if isLoading}
@@ -77,12 +77,43 @@
             <p class="text-center text-gray-300">
                 Don't have an account? 
                 <a 
-                    class="text-orange-400 hover:text-orange-500 transition duration-300"
+                    class="text-orange-400 hover:text-orange-500"
                     href="/auth/signup"
                 >
                     Sign up
                 </a>
             </p>
         </form>
+
+        <div class="flex items-center gap-2 w-full my-5">
+            <div class="flex-1 h-0.5 bg-white"></div>
+            <p class="">OR</p>
+            <div class="flex-1 h-0.5 bg-white"></div>
+        </div>
+
+        <div class="flex flex-col gap-6">
+            <form method="POST" action="?/login&provider=google" on:submit={handleSubmit}>
+                <button
+                    type="submit"
+                    class="flex items-center justify-center gap-4 w-full bg-white px-4 py-3 rounded-full hover:bg-opacity-90"
+                    disabled={isLoading}
+                >
+                    <img class="h-6"
+                    src="/google-icon.svg" alt="Sign in with Google" />
+                    <p class="text-black font-semibold">Sign in with Google</p>
+                </button>
+            </form>
+            <form method="POST" action="?/login&provider=discord" on:submit={handleSubmit}>
+                <button
+                    type="submit"
+                    class="flex items-center justify-center gap-4 w-full bg-[#5865F2] px-4 py-3 rounded-full hover:bg-opacity-90"
+                    disabled={isLoading}
+                >
+                    <img class="h-6"
+                    src="/discord-icon.svg" alt="Sign in with Discord" />
+                    <p class="text-white font-semibold">Sign in with Discord</p>
+                </button>
+            </form>
+        </div>
     </div>
 </div>

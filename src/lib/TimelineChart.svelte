@@ -187,7 +187,9 @@
     }
 
     onMount(async () => {
-        await createChart();
+        if (Highlight.isRunningInHighlight()) {
+            await createChart();
+        }
     });
 
     onDestroy(() => {

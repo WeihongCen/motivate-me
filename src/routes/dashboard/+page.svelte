@@ -1,10 +1,12 @@
 <script>
     import Highlight from "@highlight-ai/app-runtime";
-    import ProductivityPie from "$lib/ProductivityPie.svelte";
+    import ProductivityCalendar from "$lib/ProductivityCalendar.svelte";
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
     import { 
-        recording 
+        recording,
+        recordingTimer,
+        graphUpdateListener
     } from '$lib/store.js';
     import {
         GREEN,
@@ -12,54 +14,74 @@
         PRODUCTIVE_ICON,
         UNPRODUCTIVE_ICON,
         PRODUCTIVE_DESCRIPTION,
-        UNPRODUCTIVE_DESCRIPTION
+        UNPRODUCTIVE_DESCRIPTION,
+        ANALYSIS_DELAY,
+        SNAPSHOT_DELAY
     } from "$lib/const.js";
-    import { sleep } from "openai/core.js";
+    import { 
+        UserRound,
+        BriefcaseBusiness,
+        EllipsisVertical
+    } from 'lucide-svelte';
+    import {
+        formatTimer
+    } from "$lib/FormatTime.js"
     
     export let data;
-    const { supabase, user, username, occupation } = data;
+    const { supabase, user } = data;
+    let { username, occupation } = data;
 
     let unsubscribeRecording;
-    let recordingValue;
-    let productivity = 0;
-    let hourlyActivity = 0;
+    let unsubscribeTimer;
+    let bRecording;
+    let timerDisplay;
 
-    function getDate(timestamp) {
-        const today = new Date(timestamp);
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
+    function findMostFrequentWindowSnapshot(data) {
+        const windowTitleCount = {};
+        const latestTimestamp = {};
 
-        const formattedDate = `${year}-${month}-${day}`;
-        return formattedDate;
-    }
+        data.forEach(item => {
+            const { 
+                focusedWindowTitle,
+                snapshotTimeKey,
+            } = item;
+            if (windowTitleCount[focusedWindowTitle]) {
+                windowTitleCount[focusedWindowTitle]++;
+            } else {
+                windowTitleCount[focusedWindowTitle] = 1;
+            }
+            latestTimestamp[focusedWindowTitle] = snapshotTimeKey;
+        });
 
-    async function populateHourlyActivity() {
-        productivity += 1;
-        hourlyActivity += 1;
-    }
-
-    async function testBtn() {
-        let context = await Highlight.user.getContext()
-        setTimeout(() => {
-            console.log(context.application.focusedWindow.rawContents);
-        }, 2000);
+        let mostFrequentTitle = null;
+        let maxCount = 0;
+        for (const title in windowTitleCount) {
+            if (windowTitleCount[title] > maxCount) {
+                maxCount = windowTitleCount[title];
+                mostFrequentTitle = title;
+            }
+        }
+        const resultTimestamp = latestTimestamp[mostFrequentTitle];
+        const screenshotKey = Math.floor(resultTimestamp / SNAPSHOT_DELAY) % SNAPSHOT_DELAY;
+        const resultURL = Highlight.appStorage.get(`screenshots/${screenshotKey}`);
+        return { mostFrequentTitle, resultURL };
     }
 
     async function populateTestDataset() {
         await Highlight.appStorage.whenHydrated();
-        Highlight.appStorage.clear();
         let testSnapshots = [];
         let currentTime = 1724968905828;
         let productivity = 0;
         console.log("begin");
-        for (let i = currentTime - 30*60*1000; i < currentTime; i += 10*1000) {
+        for (let i = currentTime - 40*60*1000; i < currentTime; i += 10*1000) {
             const productive = Math.random() > 0.5;
             productivity += productive ? 1 : -1;
-            const timeKey = Math.round(i / 10000) * 10000;
+            const timeKey = Math.floor(i / 10000) * 10000;
             const snapshotMetadata = {
                 focusedWindowTitle: "app header - " + productive ? "productive app" : "unproductive app",
                 focusedWindowApp: productive ? "productive app" : "unproductive app",
+                startTime: timeKey,
+                endTime: timeKey + 10*1000,
                 startTime: timeKey,
                 endTime: timeKey + 10*1000,
             }
@@ -68,8 +90,12 @@
             testSnapshots = [...testSnapshots, snapshotMetadata];
             
             if ((timeKey + 10000) % 300000 === 0 && testSnapshots.length > 0) {
-                const analysisTimeKey = Math.round(testSnapshots[0].startTime / 300000) * 300000;
+                const analysisTimeKey = Math.floor(testSnapshots[0].startTime / 300000) * 300000;
                 Highlight.appStorage.set(`analysis/${analysisTimeKey}`, {
+                    productive: productivity > 0,
+                    description: productivity > 0 ? PRODUCTIVE_DESCRIPTION : UNPRODUCTIVE_DESCRIPTION,
+                    startTime: analysisTimeKey,
+                    endTime: timeKey + 10*1000,
                     productive: productivity > 0,
                     description: productivity > 0 ? PRODUCTIVE_DESCRIPTION : UNPRODUCTIVE_DESCRIPTION,
                     startTime: analysisTimeKey,
@@ -80,83 +106,116 @@
             }
         }
         console.log("complete");
-
     } 
+
+    let userDisplayName = username || user.email;
 
     onMount(async () => {
         unsubscribeRecording = recording.subscribe((value) => {
-            recordingValue = value;
-	    });
+            bRecording = value;
+        });
+        unsubscribeTimer = recordingTimer.subscribe((value) => {
+            if (bRecording) {
+                timerDisplay = formatTimer(value);
+            }
+        });
+
+        // Fetch user data if username or occupation is not available
+        if (!username || !occupation) {
+            const response = await fetch(`/api/getProfile`, {
+                method: "GET"
+            }).then(res => res.json());
+            
+            username = response.userData.username;
+            occupation = response.userData.occupation;
+            userDisplayName = username || user.email;
+        }
 
         return () => {
             unsubscribeRecording();
+            unsubscribeTimer();
         };
     });
 
-    $: hourlyActivity;
 </script>
-<!-- <CustomCursor /> -->
-<div class="w-full grid grid-cols-5 grid-rows-3 gap-5 p-5">
-    <div class="col-span-2 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
-        {#if username}
-            <h2 
-                class="overflow-hidden text-ellipsis"
+
+<div class="flex h-fit overflow-hidden gap-10">
+    <div class="flex-shrink-0 flex flex-col gap-5 w-[250px] h-fit bg-black">
+        <div class="flex justify-between items-center">
+            <button 
+                class={`
+                    flex items-center space-x-2 px-4 py-2 rounded-full
+                    transition-colors duration-300 border-2
+                    ${bRecording ? 'border-red-500 text-red-500' : 'border-white text-white'}
+                    hover:bg-zinc-700
+                `}
+                on:click={ () => {recording.set(!bRecording)} }
             >
-                {username}
-            </h2>
-        {:else if user.email}
-            <h2
-                class="overflow-hidden text-ellipsis"
-            >
-                {user.email}
-            </h2>
-        {/if}
-        {#if occupation}
-            <p  
-                class="overflow-hidden text-ellipsis"
-            >
-                {occupation}
-            </p>
-        {/if}
-    </div>
-    <div class="flex flex-col gap-2 col-span-1 col-start-3 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
-        {#if !recordingValue}
-            <button class="bg-[#ff9457] px-4 py-2 hover:opacity-80 transition-all duration-300"
-            on:click={ () => { recording.set(true) } }>
-                Record
+                <div class="relative size-3 flex items-center justify-center">
+                    <div class={`
+                        size-3 transition-colors duration-300
+                        ${bRecording ? 'bg-red-500' : 'bg-white rounded-full'}
+                    `}></div>
+                </div>
+                <span class="w-12">{bRecording ? 'Stop' : 'Record'}</span>
             </button>
-        {:else}
-            <button class="bg-red-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
-            on:click={ () => { recording.set(false) } }>
-                Stop
-            </button>
-        {/if}
-        <button class="bg-[#ff9457] px-4 py-2 hover:opacity-80 transition-all duration-300"
-        on:click={testBtn}>
-            test
-        </button>
-    </div>
-    <div class="col-span-2 col-start-4 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
-        <button class="bg-red-500 px-4 py-2 hover:opacity-80 transition-all duration-300"
-        on:click={populateTestDataset}>
-            generate test dataset (will blow up your computer)
-        </button>
-    </div>
-    <div class="flex flex-col col-span-2 row-start-2 row-span-2 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
-        <h2>{getDate(Date.now())}</h2>
-        <div class="flex justify-center items-center w-full h-full">
-            <ProductivityPie statistics={productivity} />
+            {#if timerDisplay && bRecording}
+                <p>{timerDisplay}</p>
+            {/if}
         </div>
-    </div>
-    <div class="flex flex-col gap-5 col-span-3 row-start-2 row-span-2 col-start-3 p-5 bg-gray-500 bg-opacity-30 rounded-3xl">
-        <h2>Past hour activity</h2>
-        <div class="flex flex-col w-full h-1/5 gap-5">
-            <TimelineChart statistics={hourlyActivity} />
+
+        <div class="flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+                <h2>User Info</h2>
+                <a class="size-5"
+                href="/dashboard/settings">
+                    <EllipsisVertical class="stroke-[#bbbbbb] hover:stroke-white" />
+                </a>
+            </div>
+            <div class="flex flex-col gap-2 bg-zinc-800 p-5 rounded-lg">
+                <div class="flex items-center gap-4">
+                    <div class="size-6">
+                        <UserRound />
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-[#888888]">Username</p>
+                        <p class="truncate">{userDisplayName}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="size-6">
+                        <BriefcaseBusiness />
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-[#888888]">Occupation</p>
+                        <p class="truncate">{occupation}</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <p class="relative h-full overflow-auto">
-        </p>
+
+        <ProductivityCalendar />
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 w-1/2">
+        <!-- <div class="mb-8 grid grid-cols-2 gap-4">
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-sm text-gray-400 mb-2">Average Productive Time</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-2xl font-bold">6 Hours</span>
+                    <span class="text-green-400 text-sm">↑ 16.5%</span>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-sm text-gray-400 mb-2">Average Wasted Time</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-2xl font-bold">4 Hours</span>
+                    <span class="text-red-400 text-sm">↓ 13.4%</span>
+                </div>
+            </div>
+        </div> -->
+
+        <TimelineChart />
     </div>
 </div>
-
-  
-  

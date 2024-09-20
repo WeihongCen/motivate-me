@@ -13,18 +13,44 @@ export const actions = {
 }
 
 export const load = async ({ locals: { supabase, user } }) => {
+    if (!user) {
+        redirect(303, '/login');  // Redirect to login if no user
+    }
+
     try {
-        if (user) {
-            let response = await supabase
+        let response = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url, occupation')
+            .eq('id', user.id)
+            .single();
+
+        if (response.error) throw response.error;
+
+        let username = response.data.username;
+        if (!username) {
+            // If no username, use the first part of the email
+            username = user.email.split('@')[0];
+            // Update the profile with this username
+            await supabase
                 .from('profiles')
-                .select('id, username, avatar_url, occupation')
+                .update({ username })
                 .eq('id', user.id);
-            return { username: response.data[0].username, occupation: response.data[0].occupation };
-        } else {
-            return { username: null, occupation: null };
         }
+
+        return { 
+            user,
+            username,  // This is the actual username, not the email
+            occupation: response.data.occupation,
+            avatar_url: response.data.avatar_url
+        };
     } catch (error) {
-        console.log(error.message);
-        return { username: null, occupation: null };
+        console.error('Error loading user data:', error);
+        // Even in case of error, provide the username (not email)
+        return { 
+            user,
+            username: user.email.split('@')[0],  // Fallback to email username if error
+            occupation: null,
+            avatar_url: null
+        };
     }
 };

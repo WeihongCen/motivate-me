@@ -3,5 +3,11 @@ export const UNPRODUCTIVE_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
 export const PRODUCTIVE_DESCRIPTION = "The user is being productive";
 export const UNPRODUCTIVE_DESCRIPTION = "The user is not productive";
 
-export const GREEN = "#86efac";
-export const RED = "#fca5a5";
+export const GREEN = "#34d399";
+export const RED = "#f87171";
+export const GREEN_SECONDARY = "#86efac";
+export const RED_SECONDARY = "#fca5a5";
+
+export const ANALYSIS_DELAY = 300000;
+export const SNAPSHOT_DELAY = 10000;
+export const SNAPSHOT_STORAGE_LIMIT = 100;

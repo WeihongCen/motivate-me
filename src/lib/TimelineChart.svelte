@@ -38,11 +38,9 @@
     });
 
     async function createChart() {
-    async function createChart() {
         chart = new Chart(timelineChart, {
             type: 'bar',
             data: {
-                datasets: []
                 datasets: []
             },
             options: {
@@ -152,11 +150,8 @@
         });
 
         await updateChart();
-
-        await updateChart();
     }
 
-    async function updateChart() {
     async function updateChart() {
         if (chart) {
             await Highlight.appStorage.whenHydrated();

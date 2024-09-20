@@ -259,10 +259,10 @@
         <a href="/dashboard" class="flex items-center space-x-4">
             <img src="/favicon.png" alt="Logo" class="size-8">
         </a>
-        <button class="bg-zinc-700 px-4 py-2 rounded-full hover:bg-zinc-600 transition-colors duration-300"
+        <!-- <button class="bg-zinc-700 px-4 py-2 rounded-full hover:bg-zinc-600 transition-colors duration-300"
         on:click={test}>
             test
-        </button>
+        </button> -->
         <div class="flex gap-10">
             <a class="flex flex-col items-center hover:text-white"
                 href="/dashboard"

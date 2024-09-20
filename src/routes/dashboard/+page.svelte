@@ -71,7 +71,7 @@
     async function populateTestDataset() {
         await Highlight.appStorage.whenHydrated();
         let testSnapshots = [];
-        let currentTime = Date.now();
+        let currentTime = 1724968905828;
         let productivity = 0;
         console.log("begin");
         for (let i = currentTime - 40*60*1000; i < currentTime; i += 10*1000) {
@@ -83,6 +83,8 @@
                 focusedWindowApp: productive ? "productive app" : "unproductive app",
                 startTime: timeKey,
                 endTime: timeKey + 10*1000,
+                startTime: timeKey,
+                endTime: timeKey + 10*1000,
             }
             Highlight.appStorage.set(`snapshots/${timeKey}`, snapshotMetadata);
             Highlight.appStorage.set(`appIcons/${snapshotMetadata.focusedWindowApp}`, productive ? PRODUCTIVE_ICON : UNPRODUCTIVE_ICON);
@@ -91,6 +93,10 @@
             if ((timeKey + 10000) % 300000 === 0 && testSnapshots.length > 0) {
                 const analysisTimeKey = Math.floor(testSnapshots[0].startTime / 300000) * 300000;
                 Highlight.appStorage.set(`analysis/${analysisTimeKey}`, {
+                    productive: productivity > 0,
+                    description: productivity > 0 ? PRODUCTIVE_DESCRIPTION : UNPRODUCTIVE_DESCRIPTION,
+                    startTime: analysisTimeKey,
+                    endTime: timeKey + 10*1000,
                     productive: productivity > 0,
                     description: productivity > 0 ? PRODUCTIVE_DESCRIPTION : UNPRODUCTIVE_DESCRIPTION,
                     startTime: analysisTimeKey,

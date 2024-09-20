@@ -1,5 +1,6 @@
 <script>
     import Highlight from "@highlight-ai/app-runtime";
+    import Highlight from "@highlight-ai/app-runtime";
     import { onMount } from "svelte";
     import Chart from "chart.js/auto";
     import {
@@ -17,8 +18,14 @@
     let productivity = 0;
     let selectedTime;
     let selectedIndex;
+    let data = [0, 0];
+    let productivity = 0;
+    let selectedTime;
+    let selectedIndex;
     let chart;
 
+    onMount(async () => {
+        await createChart();
     onMount(async () => {
         await createChart();
     });
@@ -46,6 +53,9 @@
                 ],
                 datasets: [{
                     label: 'Productivity',
+                    data: data,
+                    backgroundColor: [GREEN, RED],
+                    hoverBackgroundColor: [GREEN, RED],
                     data: data,
                     backgroundColor: [GREEN, RED],
                     hoverBackgroundColor: [GREEN, RED],
@@ -88,8 +98,11 @@
         });
 
         await updateChart();
+
+        await updateChart();
     }
 
+    async function updateChart() {
     async function updateChart() {
         if (chart) {
             await Highlight.appStorage.whenHydrated();

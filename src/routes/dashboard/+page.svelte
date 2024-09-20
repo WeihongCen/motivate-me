@@ -1,7 +1,6 @@
 <script>
     import Highlight from "@highlight-ai/app-runtime";
     import ProductivityCalendar from "$lib/ProductivityCalendar.svelte";
-    import ProductivityPie from "$lib/ProductivityPie.svelte";
     import TimelineChart from "$lib/TimelineChart.svelte";
     import { onMount } from "svelte";
     import { 

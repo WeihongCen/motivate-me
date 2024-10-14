@@ -172,7 +172,7 @@
                     <EllipsisVertical class="stroke-[#bbbbbb] hover:stroke-white" />
                 </a>
             </div>
-            <div class="flex flex-col gap-2 bg-zinc-800 p-5 rounded-lg">
+            <div class="flex flex-col gap-4 bg-zinc-800 p-5 rounded-lg">
                 <div class="flex items-center gap-4">
                     <div class="size-6">
                         <UserRound />
@@ -187,8 +187,15 @@
                         <BriefcaseBusiness />
                     </div>
                     <div class="flex-1">
-                        <p class="text-[#888888]">Occupation</p>
-                        <p class="truncate">{occupation}</p>
+                        {#if occupation}
+                            <p class="text-[#888888]">Occupation</p>
+                            <p class="truncate">{occupation}</p>
+                        {:else}
+                            <a class="text-orange-500 px-4 py-1 border border-orange-500 hover:border-orange-300 hover:text-orange-300 rounded-full"
+                            href="/dashboard/settings">
+                                set occupation
+                            </a>
+                        {/if}
                     </div>
                 </div>
             </div>

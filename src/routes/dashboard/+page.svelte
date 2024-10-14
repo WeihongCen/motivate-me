@@ -187,7 +187,7 @@
                         <BriefcaseBusiness />
                     </div>
                     <div class="flex-1">
-                        {#if occupation}
+                        {#if occupation && occupation.trim() !== ''}
                             <p class="text-[#888888]">Occupation</p>
                             <p class="truncate">{occupation}</p>
                         {:else}
